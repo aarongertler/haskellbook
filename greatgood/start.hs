@@ -65,5 +65,50 @@ f = take 24 [13,26..] -- Returns first 24 multiples of 13!
 g = take 10 (cycle [1,2,3,4]) -- [1,2,3,4,1,2,3,4,1,2]
 
 h = take 5 (repeat 1) -- [1,1,1,1,1]
-replicate 1 5 -- [1,1,1,1,1]
+i = replicate 1 5 -- [1,1,1,1,1]
  
+listC = [x*x | x <- [1..10]] -- X^2 from 1 to 10
+listFilter = [x*x | x <- [1..10], x*x >= 25] -- Finds values of x^2 greater than 25 where x is between 1 and 10
+
+listFn y = [if x < 10 then "Boom!" else "Bang!" | x <- y, even x] -- Returns Boom and Bang for even values of X when we provide a list of numbers y
+
+-- listFn [7..13] -- ["Boom!", "Bang!", "Bang!"]
+
+listExclude = [x | x <- [10..20], x /= 13] -- All X from 10 to 20 that aren't 13
+
+listTwoVar = [x*y | x <- [3..5], y <- [4..6]] -- Returns each of 3,4,5 times each of 4,5,6
+listTwoVarFilter = [x*y | x <- [3..5], y <- [4..6], x*y > 20] -- Places a filter on the results we want
+
+
+-- Assigning lists outside of their list comprehensions:
+
+adj = ["blue", "green"]
+noun = ["bird", "frog"]
+
+madLibs = [adj ++ " " ++ noun | adj <- adj, noun <- noun] -- returns blue and green frogs and birds
+
+
+removeLower string = [char | char <- string, char `elem` ['A'..'Z']] 
+-- The above takes a string and returns only chars that are ELEMents of the list A..Z
+
+
+-- You can use nested list comprehensions:
+
+xxs = [[1,3,5,2,3,1,2,4,5],[1,2,3,4,5,6,7,8,9],[1,2,4,2,1,6,3,1,3,2,3,6]]  
+nestedC = [ [ x | x <- xs, even x ] 
+                | xs <- xxs] -- Splitting over multiple lines helps!
+-- The above says: "Look at each list in xxs, then spit out all even x from each of those lists"
+-- (This will still keep the answer in the form of a list of lists)
+
+-- zip allows the combination of lists
+zipTest = zip [1..5] ['a'..'e'] --[(1, 'a'), (2, 'b'), etc.]
+zipTestTwo = zip [1..] ["apple", "banana", "carrot"] -- We cut off our infinite list when we run out of finite things to zip with
+
+-- Putting it all together:
+
+limit = 100
+rightTriangles = [(a,b,c) | c <- [1..limit], b <- [1..(c - 1)], a <- [1..(b - 1)], a^2 + b^2 == c^2]
+-- [(3,4,5), (6,8,10)], and then lots more 
+
+-- All you need is a starting set of data (our limit for c), and then lots of filters on top of that
+-- Notably, we check each value of c in turn (making it easy to see which a and b values qualify to be checked)
