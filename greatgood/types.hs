@@ -66,3 +66,27 @@ fromInt = fromIntegral (length [1,2,3]) + 3.2 -- 6.2, would break without fromIn
 -- If a is Integral and b is Num, fromIntegral can make b from a
 
 fromIntAgain = fromIntegral (1 :: Int) + 2.2
+
+
+
+-- Random notes from the Haskell wiki: 
+
+-- We can't just take sqrt n if n is a non-Float. Instead, we must:
+
+-- fromIntegral :: (Num b, Integral a) => a -> b
+c = (4 :: Int)
+a = sqrt (fromIntegral c)
+-- b = sqrt c  Doesn't work, c needs to be a Float/Double
+
+-- Lots of special-case functions in Haskell for converting types:
+-- fromRational, toRational, realToFrac, etc.
+
+-- This is also how ceiling and floor work (different ways of convering RealFrac to Integral types)
+
+-- Writing new conversion functions (example)
+
+intToFloat :: (Int) -> (Float)
+intToFloat x = fromIntegral x -- as seen above, turns non-floats into floats
+
+floatToInt :: (Float) -> (Int)
+floatToInt x = round x
