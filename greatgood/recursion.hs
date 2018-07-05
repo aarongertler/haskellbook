@@ -39,3 +39,17 @@ finito = take 5 (repeat 3) -- We never need to finish the infinite list;
 -- thanks to lazy eval, we just look at the first 5 things and find that all are 3s
 
 
+elem' :: (Eq a) => a -> [a] -> Bool -- Was able to write this one without looking, good
+elem' a [] = False
+elem' a (x:xs)
+    | a == x = True
+    | otherwise = elem' a xs
+
+
+quicksort :: (Ord a) => [a] -> [a] -- Helpful illustration for this in the book
+quicksort [] = []
+quicksort (x:xs) =  -- x is always placed with the correct number of bigger and smaller elements on each side
+	let smaller = quicksort [a | a <- xs, a <= x] -- We could also have a < x here and a >= x below
+	    bigger = quicksort [a | a <- xs, a > x]
+	in  smaller ++ [x] ++ bigger
+
