@@ -76,6 +76,64 @@ filterthree = filter' (>3) [1,2,3,4,5]
 badfilterthree = [(x) | x <- [1,2,3,4,5], x>3] -- Not awful, still less readable    	
 
 
+-- quicksort is faster with filtering
+
+quicksort :: (Ord a) => [a] -> [a]
+quicksort [] = []
+quicksort (x:xs) = smaller ++ [x] ++ bigger
+    where bigger = quicksort (filter (>x) xs)
+          smaller = quicksort (filter (<=x) xs)
+
+
+-- Finding the largest number under x, divisible by y
+
+largestDivisible :: (Integral a) => a -> a -> a -- this works!
+largestDivisible x y = head (filter p [x,(x-1)..])
+    where p x = x `mod` y == 0 -- Need to create our predicate and include the fact that it acts on x
+
+
+-- Putting together fancy results: et the sum of all odd squares under 10,000
+-- Start by declaring the function result we are summing, then write what data we pass into the function
+fancy = sum (takeWhile (<10000) (filter odd (map (^2) [1..])))
+-- For numbers 1 and greater, map the square function to the list, only take odd values from that list, and keep adding values until we hit a value over 10,000
+-- takeWhile gives us a list of eligible squares to sum
+
+
+-- But I might prefer the list comprehension version:
+
+fancyLC = sum (takeWhile (<10000) [n^2 | n <- [1..], odd (n^2)])
+-- We are taking a list of numbers 1 and greater, passing in only the values of n
+-- where n^2 is odd, and then adding the n^2 values to our takeWhile list
+-- (using n^2 kind of stinks, but the above reads a bit more "sentence-like", so I'm unsure)
+
+
+-- TEST: Build a function to generate Collatz sequences
+
+collatz :: (Integral a) => a -> [a] -- Can't just return [a], you also need to specify that you take a
+collatz 1 = [1] -- Remember that 1 is a part of the chain! No [] here
+collatz n
+    | even n = n : collatz (div n 2) -- need to chain n with the collatz, not [n] (else you produce a list of lists, not cool!)
+    | odd n = n : collatz ((n * 3) + 1)
+
+
+longChains = length (filter long (map collatz [1..100]))
+    where long xs = length xs >= 15
+
+
+
+
+-- You can map a set of Ords into functions like so:
+
+functionList = map (++) ["Cat","Dog","Fish"] -- Prepare each string to have something added to it
+result = (functionList !! 2) (" " ++ "Sticks") -- "Fish Sticks"
+
+-- showList = print functionList
+-- MAKE THE ABOVE THING WORK!
+
+
+
+
+
 
 
 
