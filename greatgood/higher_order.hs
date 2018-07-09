@@ -127,6 +127,48 @@ longChains = length (filter long (map collatz [1..100]))
 functionList = map (++) ["Cat","Dog","Fish"] -- Prepare each string to have something added to it
 result = (functionList !! 2) (" " ++ "Sticks") -- "Fish Sticks"
 
+
+-- Lambdas = anonymous functions that get passed to higher-order functions
+
+-- we can make our "longChains" function more efficient:
+
+longChains = length (filter (\xs -> length xs > 15) (map collatz [1..100]))
+-- We replace our where with an anonymous function, \xs
+
+lambdaZip = zipWith (\a b -> (a * 12) / b) [1,2,3,4,5] [4,3,2,1,1]
+-- Create an anonymous function that works with the values of both a and b,
+-- so that we do something with both of the lists we are zipping togther
+
+-- Lambdas can only match one pattern (no exceptions!)
+
+-- Maybe the most readable version of flip:
+flip' :: (a -> b -> c) -> b -> a -> c 
+flip' f = \x y -> f y x -- We'll turn whatever f does into the opposite f
+-- Good to use a lambda here, since we'll never actually feed parameters into our function f
+-- (we just use it as a parameter)
+-- #QUESTION: Why does the right association work in the "output" line of this function?
+
+-- NOTE FOR THE ABOVE: (b -> a -> c) is the same as b -> a -> c
+-- Type declaration just tells us we are returning three thing,
+-- unnecessary to state that they are a function specifically
+-- This still feels like a #QUESTION to me, not sure I understand the meaning of "right associative" well enough
+
+
+-- Next up: foldl
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 -- showList = print functionList
 -- MAKE THE ABOVE THING WORK!
 
