@@ -132,7 +132,7 @@ result = (functionList !! 2) (" " ++ "Sticks") -- "Fish Sticks"
 
 -- we can make our "longChains" function more efficient:
 
-longChains = length (filter (\xs -> length xs > 15) (map collatz [1..100]))
+-- longChains = length (filter (\xs -> length xs > 15) (map collatz [1..100]))
 -- We replace our where with an anonymous function, \xs
 
 lambdaZip = zipWith (\a b -> (a * 12) / b) [1,2,3,4,5] [4,3,2,1,1]
@@ -142,8 +142,8 @@ lambdaZip = zipWith (\a b -> (a * 12) / b) [1,2,3,4,5] [4,3,2,1,1]
 -- Lambdas can only match one pattern (no exceptions!)
 
 -- Maybe the most readable version of flip:
-flip' :: (a -> b -> c) -> b -> a -> c 
-flip' f = \x y -> f y x -- We'll turn whatever f does into the opposite f
+-- flip' :: (a -> b -> c) -> b -> a -> c 
+-- flip' f = \x y -> f y x -- We'll turn whatever f does into the opposite f
 -- Good to use a lambda here, since we'll never actually feed parameters into our function f
 -- (we just use it as a parameter)
 -- #QUESTION: Why does the right association work in the "output" line of this function?
@@ -154,9 +154,51 @@ flip' f = \x y -> f y x -- We'll turn whatever f does into the opposite f
 -- This still feels like a #QUESTION to me, not sure I understand the meaning of "right associative" well enough
 
 
--- Next up: foldl
+-- Next up: folding!
+-- Take each item in a list and do something with it, which may or may not depend on the other elements in the list
+-- This is a lot like a for loop in other languages... maybe?
+
+-- sum' :: (Num a) => [a] -> a
+-- sum' = foldl (\acc x -> acc + x) 0
+-- At each stage, acc increases by x; it starts at 0
+-- No need to write "sum' xs", because currying lets us assume we'll pass in a list
+
+-- Even faster:
+sum' :: (Num a) => [a] -> a
+sum' = foldl (+) 0 -- If we're performing a series of two-parameter functions on our accumulator and the next x, this style works
 
 
+elem' :: (Eq a) => a -> [a] -> Bool
+elem' x = foldl (\acc y -> if y == x then True else acc) False
+-- Starting with the value "false" for acc, we check each element in the list
+-- and switch to "True" permanently if we find what we're looking for
+
+-- Note that \acc y is a lambda function, which we r
+
+
+-- How foldr works:
+-- foldr :: (a -> b -> b) -> b -> [a] -> b
+-- foldr f acc []     = acc
+-- foldr f acc (x:xs) = f x (foldr f acc xs)
+
+map' :: (a -> b) -> [a] -> [b]
+map' f = foldr (\x acc -> f x : acc) []
+-- Fold implies that we have a list already, and will move through the list
+-- We move through our list, prepending each result so that we rebuild the mapped list from nothing
+-- If we used foldl here, we'd need to ++ to build our list,
+-- which is much slower than using :, so it's a great opportunity for foldr
+
+-- So for map (*2) onto [1,2,3], we get:
+-- f x (foldr f acc xs) = (*2) 1 : (foldr f acc [2,3])
+-- and then (*2) 1 : (*2) 2 : (foldr f acc [3])
+-- ... and so on. And "acc" represents the rest of the foldr stuff because foldr
+-- generates a function where the second parameter is the "acc" 
+-- foldr (all the other stuff) is just another way of saying "acc"
+-- (until you get to the end and combine the original acc with the other things you've accumulated)
+
+-- Explanation for why x and acc need to be in the "same order" above:
+-- https://en.wikibooks.org/wiki/Haskell/Lists_III
+--
 
 
 
