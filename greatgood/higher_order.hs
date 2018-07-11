@@ -198,18 +198,73 @@ map' f = foldr (\x acc -> f x : acc) []
 
 -- Explanation for why x and acc need to be in the "same order" above:
 -- https://en.wikibooks.org/wiki/Haskell/Lists_III
---
+-- foldl f acc (x:xs) =  foldl f (f acc x) xs    versus:
+-- foldr f acc (x:xs) = f x (foldr f acc xs)
+-- It's the way we order the parameters of the function, that's all
+-- (and it should be clear why foldr moves from R-L, and foldl from L-R)
+
+
+-- Lots of example folds in this chapter. My favorites:
+
+reverse' :: [a] -> [a]
+reverse' = foldl (\acc x -> x : acc) [] -- build from back to font, simple
+
+maximum' :: (Ord a) => [a] -> a
+maximum' = foldl1 (\acc x -> if x > acc then x else acc)
+-- We use "foldl1" for maximum', which automatically uses the first element as our starting value (since that will be the max if nothing else is)
+
+
+-- scanl and scanr = foldl and foldr, but they list intermediate states
+-- (Seems handy for testing purposes!)
+
+-- How many roots can you add up before your sum is >1000?
+
+sqrtSums = length (takeWhile (<1000) (scanl1 (+) (map sqrt [1..]))) + 1
+
+-- We could also retrieve the square root of the last number found to get our "last root" and our answer,
+-- but I don't know whether that would be faster (I think it would be less readable)
+
+
+-- $ = function application = lowest-priority operator, can replace parens
+
+app = sqrt $ 3 + 4 -- 49
+
+appMap = map ($ 4) [(4+),(2*),(^2),(sqrt)] -- [8.0,8.0,16.0,2.0]
 
 
 
+-- Function composition = f(g(x)), binding two functions together
+
+. :: (b -> c) -> (a -> b) -> a -> c -- enter an a, it becomes a b, which becomes a c
+f . g = \x -> f (g x)
+
+-- Example: Turn a lot of numbers negative
+comp = map (negate . abs) [5, -3, -6, 7] -- everything becomes negative
+
+compTwo = map (negate . sum . tail) [[1..5],[3..6],[1..7]] -- Returns the negative sum of all numbers but the first for each list
+
+-- To quote the book:
+-- sum (replicate 5 (max 6.7 8.9)) can be rewritten as 
+-- (sum . replicate 5 . max 6.7) 8.9 
+-- or as sum . replicate 5 . max 6.7 $ 8.9
 
 
+-- Writing functions with currying = "point free style"
+-- We can turn this:
+
+fn x = ceiling (negate (tan (cos (max 50 x))))
+
+-- Into this:
+
+fn = ceiling . negate . tan . cos . max 50
+
+-- Once parens are gone, we can also safely get rid of x
+-- otherwise, cos (max 50) wouldn't make sense
 
 
-
-
-
-
+-- See chapter's end for examples of concise functions written for oneself
+-- vs. longer functions written to be understandable to others
+-- (Being able to name lots of variables helps!)
 
 -- showList = print functionList
 -- MAKE THE ABOVE THING WORK!
