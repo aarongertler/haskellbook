@@ -91,3 +91,53 @@ count = map (\(x:xs) -> (x, length (x:xs))) . group . sort $ [1,2,2,1,3,3,1,4,4,
 -- [(1,4),(2,2),(3,2),(4,3)]
 -- First, sort and group the list (into a list of lists)
 -- Second, take each sublist and return a tuple, giving the first item in the list and the length of that list (that is, the number we have of that particular item) 
+
+-- inits and tails are recursive versions of init and tail
+its = inits "abc" -- ["","a","ab","abc"]
+ils = tails "abc" -- ["abc","bc","c",""]
+
+-- Searching a list for a sublist:
+search :: (Eq a) => [a] -> [a] -> Bool
+search target space =
+  let tlen = length target
+  in  foldl (\acc x -> if take tlen x == target then True else acc) False (tails space)
+-- "tails" lets you look at all the places you could "start looking" in the space
+-- So you just check all those tails to see if they start with the target value
+
+-- isInFixOf does the same thing as our search function above
+-- isPrefixOf and isSuffixOf just check the beginning/end for the target
+
+
+-- Partition: split a list into lists that do/don't fit a predicate
+par = partition (>3) [2,4,5,1,6,3,7] -- ([4,5,6,7],[2,1,3])
+-- Unlike span/break, won't stop after hitting the first match
+
+
+-- find grabs the first matching value from a list
+fin = find (>4) [1,2,3,4,5,6] -- returns Just 5 (Maybe value)
+finNothing = find (>4) [1,2] -- returns Nothing
+-- finType = :t find = find :: (a -> Bool) -> [a] -> Maybe a
+-- Takes data of any one type, needs a true/false predicate and a list to return a Maybe value
+-- find is much safer than trying to return the head of a list of elements that match a predicate,
+-- since taking the head of an empty list (if nothing matches) will return an error
+
+
+-- elemIndices tells you where your elements are
+indices = 'e' `elemIndices` "Where are the e's?" -- [2,4,8,12,14]
+
+
+-- zip3 and zipWith3 zip three lists at a time, with/without a three-predicate function
+-- We have these specialty zips up to 7
+
+
+-- Working with strings!
+lin = lines "first\nsecond\nthird" -- ["first","second","third"]
+unlin = unlines ["first","second"] -- "first\nsecond" (string, not list)
+wrd = words "first second third" -- ["first","second","third"]
+unwrd = unwords ["first","second"] -- "first second" (string, not list)
+
+dlt = delete 'e' "delete" -- "dlete" (just first occurrence of an element)
+slashes = "delete" \\ "ete" -- "del" 
+slashesNum = [1..10] \\ [1,5] -- [2,3,4,6,7,8,9,10]
+unn = union [1..5] [3..7] -- [1,2,3,4,5,6,7] (joins all elements in one or both, eliminates duplicates)
+sect = intersect [1..5] [3..7] -- [3,4,5] (only elements that were in both)
