@@ -317,13 +317,17 @@ phoneBookToMap xs = Map.fromListWith (\number1 number2 -> number1 ++ ", " ++ num
 
 -- Finally, we have sets (only unique values, always ordered):
 
+text1 = "The quick brown fox jumps over the lazy dog."
+text2 = "Pack my box with five dozen liquor jugs!"
 
+set1 = Set.fromList text1
+set2 = Set.fromList text2
+inter = Set.intersection set1 set2
+diff1 = Set.difference set1 set2 -- what's in set1, but not set2?
+union = Set.union set1 set2 -- what's in one OR the other set?
 
+-- Many other functions are similar to those for maps:
+-- singleton, insert, null, delete, size...
+-- sets can be filtered and mapped, too
 
-
-
-
-
-
--- When you reach the end of the chapter, go here: 
--- https://downloads.haskell.org/~ghc/latest/docs/html/libraries
+-- To check for subsets, use 'isSubsetOf'
