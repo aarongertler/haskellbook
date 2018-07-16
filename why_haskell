@@ -1,0 +1,17 @@
+Why Haskell Matters:
+
+https://wiki.haskell.org/Why_Haskell_matters
+
+* Imperative languages raise the level of abstraction by creating more and more keywords and functions, inevitably making the language larger, but never breaking away from the fundamental task of sequencing
+
+* Functional languages get rid of sequencing. You don't have to choose how or when to compute something; you just choose what to compute. (This seems to oversimplify a bit -- there are certainly faster and slower ways to compute the same results in Haskell.)
+
+* Function modularity = once you get a general function right, you can expand it quickly and easily, without copy-and-pasting everywhere (as with most things functional, this is *possible* in imperative languages, but more difficult and less elegant)
+
+* "Updating" variables makes sense if you've worked with imperative languages long enough, but there's something ugly about it -- after all, in mathematics, you can't just "update" a variable (plus, this way lets you avoid side effects, since your functions will always return the same result with the same input no matter what happens elsewhere)
+
+* "You could even argue that *most* bugs in large systems can be traced back to side-effects -- if not directly caused by them, then caused by a flawed design that relies on them." (This makes Haskell a "pure" programming language.)
+
+* Other important features: Strong typing (fewer bugs, and problems found immediately rather than weeks later), lazy evaluation (no needless computing), programs are short and highly modular by nature (easier to see what's happening when you look at the code)
+
+* "If you can develop your Haskell application in one tenth the time it would take to develop it in C (from experience, this is not at all uncommon) you will have lots of time to profile and implement new algorithims. So in the "real world" where we don't have infinite amounts of time to program our applications, Haskell programs can often be much faster than C programs."
