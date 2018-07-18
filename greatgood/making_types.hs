@@ -44,3 +44,58 @@ baseRectangle width height = Rectangle (Point 0 0) (Point width height)
 
 recTwo = baseRectangle 2 2
 recNudge = nudge (baseRectangle 2 2) 4 4
+
+
+-- If we built a module for this:
+-- module Shapes
+-- ( Point(..)
+-- , Shape(..) -- Equivalent to Share (Rectangle,Circle) -- gets all the constructors
+-- , area
+-- , nudge
+-- , baseCircle
+-- , baseRectangle
+-- ) where
+
+-- even if we didn't export the constructors directly, people could still create
+-- Rectangles and Circles using baseRectangle and baseCircle
+
+
+-- Next example shows creation of a "Person" type, confirming my suspicion that this is one way that
+-- Haskell does object-oriented stuff
+-- Shows off data-fetching functions, for example
+
+data Person = Person { firstName :: String
+                     , lastName :: String
+                     , age :: Int
+                     , height :: Float
+                     , phoneNumber :: String
+                     } deriving (Show) -- don't forget this part!
+
+showPerson :: Person -> String
+showPerson (Person {firstName = f, lastName = l, age = a}) =
+  "My name is " ++ f ++ " " ++ l ++ ", age " ++ show a
+
+-- if we try to leave out some fields, we'll get a non-fatal error (can still load module)
+-- but placing fields in any order is fine
+-- e.g. Person {lastName="Gertler",firstName="Aaron"}... etc.
+
+
+-- This "record syntax" is only needed if we have multiple fields that could be confused
+-- good for something like a Person, not needed for something like a Point (if we always remember x,y order)
+
+
+-- Value constructor = takes values, produces value (e.g. Person)
+-- Type constructor = takes types, produces type (e.g. Maybe, List)
+
+-- tidbit: Nothing and [] are very flexible -- we can have them act like a (Maybe a) for any type a 
+-- and a list of any type, respectively. [1]++[] and ['a']++[] both work for that reason
+
+
+-- Anyway, type parameters are best when we want to work with many different types
+-- (For example, we might have a list of Ints or Chars or Strings...)
+-- Map also does this, letting us map any Ord type to any other Ord type with k, v
+
+-- Even so, we don't specify data (Ord k) => Map k v = ...
+-- That's because, when we want to order keys in a function, we'll specify (Ord k) in that function anyway
+-- and when we don't want to order keys, we can avoid needing to add (Ord k)
+-- unless (Ord k) is baked into our data declaration, in which case we'll need to add it to *every map function we write*
