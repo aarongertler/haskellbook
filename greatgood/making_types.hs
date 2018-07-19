@@ -1,5 +1,7 @@
 -- Making our own types and typeclasses
 
+import qualified Data.Map as Map 
+
 -- data Bool = False | True   -- Show all options when defining a type
 
 -- Custom type:
@@ -99,3 +101,71 @@ showPerson (Person {firstName = f, lastName = l, age = a}) =
 -- That's because, when we want to order keys in a function, we'll specify (Ord k) in that function anyway
 -- and when we don't want to order keys, we can avoid needing to add (Ord k)
 -- unless (Ord k) is baked into our data declaration, in which case we'll need to add it to *every map function we write*
+
+data Vector a = Vector a a a deriving (Show, Read)  
+  
+vplus :: (Num t) => Vector t -> Vector t -> Vector t  
+(Vector i j k) `vplus` (Vector l m n) = Vector (i+l) (j+m) (k+n)  
+-- We don't use type Vector t t t -> t, because our types are based on our *constructor",
+-- which we've defined as Vector a (inputting Vector t as a type will let us use Vector t t t)
+
+
+-- Typeclasses = interfaces, not Python-ish "classes"
+-- Make a data type first, then think about how it can act to choose typeclasses (Eq, Ord, etc.)
+
+-- We can use "deriving" on Show, Enum, Bounded, Read, Eq, and Ord
+-- If we use Eq for our type, Eq must also work for all types *within* our type (same for some other types)
+-- Enum = predecessors and successors, Bounded = lowest and highest possible value
+
+-- Show and Read let us turn values of our type into a string, and turn strings into values of our type (respectively)
+-- Trying to read Vector seems to fail no matter how I slice it (#QUESTION) (seems to happen because Vector isn't actually a type, but a type function mapping numbers to vectorrs)
+
+
+data Day = Monday | Tuesday | Wednesday | Thursday | Friday | Saturday | Sunday   
+           deriving (Eq, Ord, Show, Read, Bounded, Enum)  
+-- Gives us a chance to test all the types (e.g. sun = read "Sunday" :: Day)
+-- [minBound .. maxBound] :: [Day] -> creates list of all days from "least" (Monday) to "most" (Sunday), thanks to Enum
+
+
+-- type String = [Char] -- doesn't invent a new type, just defines these two types as synonyms
+type AssocList k v = [(k,v)] -- Lets us represent a list without defining a particular type for keys and values
+-- Another example: type phoneBook = [(String,String)]
+-- Better yet:
+-- type PhoneNumber = String
+-- type Name = String
+-- type phoneBook = [(Name,PhoneNumber)] -> much more descriptive! 
+-- This also lets us write cute functions like  
+-- inPhoneBook :: Name -> PhoneNumber -> PhoneBook -> Bool    (much better than String -> String -> [(String,String)] -> Bool)
+-- inPhoneBook name pnumber pbook = (name,pnumber) `elem` pbook
+
+
+-- We can also use curried type constructors (partially applying them to get new constructors)
+type IntMap = Map.Map Int -- Now we can use IntMap x  and map Int to x, whatever type that is
+
+
+-- Useful type = Either a b, which is like Maybe a, but offering a more informative fail/secondary outcome case than "Nothing"
+
+data LockerState = Taken | Free deriving (Show, Eq) -- We've defined an "either" here
+type Code = String
+type LockerMap = IntMap (LockerState, Code) -- we can now input an "either" and a string, and map that into being a coded locker that is either taken or free
+
+lockers :: LockerMap -- define the type of the variable before you try to map it!
+lockers = Map.fromList   
+    [(100,(Taken,"ZD39I"))  
+    ,(101,(Free,"JAH3I"))  
+    ,(103,(Free,"IQSA9"))  
+    ,(105,(Free,"QOTSA"))  
+    ,(109,(Taken,"893JJ"))  
+    ,(110,(Taken,"99292"))  
+    ] 
+
+lockerLookup :: Int -> LockerMap -> Either String Code -- take a locker number and map of lockers to look at, give us back an "either" noting one of two things (our code, or a notice that the locker is taken)
+lockerLookup lockerNumber map = 
+  case Map.lookup lockerNumber map of -- define results for different things we could find checking this number on our map (lookup is pre-defined in Map)
+      Nothing -> Left $ "Locker number " ++ show lockerNumber ++ " doesn't exist!"    -- lookup uses "Maybe", so we could get back a "Nothing" result
+      Just (state, code) -> if state /= Taken -- this is why we brought in (Eq) above
+                            then Right code -- we've defined that our either's Right is a number, so we specify that the number we return is in Right
+                            else Left $ "Locker " ++ show lockerNumber ++ " is already taken!"
+
+-- NOTE: This is one of the more complex things I've written in Haskell so far, and I'm already pining for Python... but trying to keep in mind that
+-- Haskell is much faster underneath, and that the smooth "Nothing" type here *might* not have such a simple equivalent in Python
