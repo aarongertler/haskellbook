@@ -148,6 +148,8 @@ type IntMap = Map.Map Int -- Now we can use IntMap x  and map Int to x, whatever
 data LockerState = Taken | Free deriving (Show, Eq) -- We've defined an "either" here
 type Code = String
 type LockerMap = IntMap (LockerState, Code) -- we can now input an "either" and a string, and map that into being a coded locker that is either taken or free
+                                            -- also, using "IntMap" here lets us give each locker a number in the map!
+
 
 lockers :: LockerMap -- define the type of the variable before you try to map it!
 lockers = Map.fromList   
@@ -169,3 +171,45 @@ lockerLookup lockerNumber map =
 
 -- NOTE: This is one of the more complex things I've written in Haskell so far, and I'm already pining for Python... but trying to keep in mind that
 -- Haskell is much faster underneath, and that the smooth "Nothing" type here *might* not have such a simple equivalent in Python
+
+
+-- Recursive data structures: Their constructors have fields that include their own type (like lists!)
+
+data List a = Empty | Cons a (List a) deriving (Show, Read, Eq, Ord) -- Enum and Bounded don't make sense here
+-- In other words, every list is either an empty list or a head combined with a list 
+-- Cons is a word for :, and is a constructor itself -- takes a value and list, returns a list
+
+-- infixr 5 :-:    We declare a "fixity" for our constructor -- : is right-associative (infixr, not infixl) and has a fixity of 5
+-- higher fixity = higher priority on binding. * is fixity 7, + is fixity 6 -> hence, order of operations
+
+-- The chapater redesigns some basic list functions from scratch, might be good to revisit
+
+
+-- Binary search tree time!
+
+data Tree a = EmptyTree | Node a (Tree a) (Tree a) deriving (Show) -- if our node isn't empty, it has two trees branching off from it (though one of those trees could be empty)
+
+singleTree :: a -> Tree a
+singleTree x = Node x EmptyTree EmptyTree -- Create the top node of a tree
+
+insert :: (Ord a) => a -> Tree a -> Tree a -- No pointers in Haskell, but making a new tree from scratch is still quick (hooray for lazy eval)
+insert x EmptyTree = singleTree x -- make a new tree if there's nothing to which we can add
+insert x (Node a left right) -- Check the node we're looking at, and...
+    | x == a = Node x left right -- Just return the same tree we had before, no change
+    | x < a  = Node a (insert x left) right -- return the same node, but now pushing x to the left (where it will eventually hit itself or an EmptyTree)
+    | x > a  = Node a left (insert x right)
+
+elemTree :: (Ord a) => a -> Tree a -> Bool
+elemTree x EmptyTree = False -- If we hit the end of our path, our element can't exist -- otherwise, we'd have been guided there
+elemTree x (Node a left right)
+    | x == a = True
+    | x < a = elemTree x left -- check with the node to the left, which is one level "down"
+    | x > a = elemTree x right
+
+buildTree :: (Ord a) => [a] -> Tree a
+buildTree ls = foldr insert EmptyTree ls
+
+t = buildTree [4,5,1,8,9,2,2,6]
+
+
+-- Making our own typeclasses!
