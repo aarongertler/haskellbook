@@ -213,3 +213,5 @@ t = buildTree [4,5,1,8,9,2,2,6]
 
 
 -- Making our own typeclasses!
+
+-- Here's how Eq works:
