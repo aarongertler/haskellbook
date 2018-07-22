@@ -215,3 +215,64 @@ t = buildTree [4,5,1,8,9,2,2,6]
 -- Making our own typeclasses!
 
 -- Here's how Eq works:
+
+-- class Eq a where  -- "a" can be any lowercase word (like "equatable") for our purposes
+-- 	(==) :: a -> a -> Bool  -- this is a function of type (Eq a) => a -> a -> Bool
+-- 	(/=) :: a -> a -> Bool
+-- 	x == y = not (x /= y)
+-- 	x /= y = not (x == y)
+
+-- We can customize Eq for a certain datatype with an instance
+
+data TrafficLight = Red | Yellow | Green
+
+-- instance Eq TrafficLight where -- we only have to implement == here, not /=, because /= is defined in terms of == (so /= "knows" that it works for all relations we haven't defined here, since those relations aren't ==)
+--   Red == Red = True
+--   Green == Green = True
+--   Yellow == Yellow = True
+--   _ == _ = False
+
+instance Show TrafficLight where
+  show Red = "Red light" -- default would be just "Red"
+  show Yellow = "Yellow light"
+  show Green = "Green light"
+
+
+-- Some typeclasses are subclasses of other typeclasses
+-- class (Num a) => Int a where    -> to define something as an Int, we must check that it's a Num first
+
+-- instance (Eq m) => Eq (Maybe m) where -- "m" is needed because Maybe is a type constructor, not a concrete type
+-- -- and the extra (Eq m) at the beginning ensures that the type we construct actually works with Eq!
+--   Just x == Just y = x == y
+--   Nothing == Nothing = True
+--   _ == _ = False
+
+
+-- Making a JS-ish "true-ish" class (as in "if ("")" -> False   and "if ("something")" -> True)
+
+class YesNo a where
+  yesno :: a -> Bool -- That's all we need! Something is either yes, or no, nothing is anything else (no need for a /yesno function like /=)
+
+instance YesNo Int where
+  yesno 0 = False -- hit this if you have 0, everything else trickles down
+  yesno _ = True 
+
+instance YesNo [a] where
+  yesno [] = False
+  yesno _ = True
+
+instance YesNo Bool where
+  yesno = id  -- "id" takes a parameter and returns the same thing -- no need to even write "yesno Bool"
+
+instance YesNo (Maybe a) where -- no class constraint needed, the "a" for the Maybe could be any type
+  yesno (Just _) = True
+  yesno Nothing = False
+
+instance YesNo (Tree a) where
+	yesno EmptyTree = False
+	yesno _ = True
+
+
+-- Here comes a real test for our new typeclass...
+
+yesnoIf :: (YesNo x) => x -> a -> a -> a -- Take a yesno, a "yes" result, and a "no" result, then return one of the results
