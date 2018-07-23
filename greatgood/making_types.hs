@@ -276,3 +276,23 @@ instance YesNo (Tree a) where
 -- Here comes a real test for our new typeclass...
 
 yesnoIf :: (YesNo x) => x -> a -> a -> a -- Take a yesno, a "yes" result, and a "no" result, then return one of the results
+yesnoIf yesnoVal yesResult noResult = if yesno yesnoVal then yesResult else noResult -- now we can act like Javascript. Whee.
+
+
+-- And on to functors, a typeclass for things we can map over
+
+class Functor f where -- f is like Maybe here -- a type constructor that can hold exactly one type parameter
+	fmap :: (a -> b) -> f a -> f b 
+	-- a more general version of "map", which is an fmap that works only on lists (take a function and a constructor with parameter A, 
+		-- output a constructor with parameter B) (in "map", f a would be [a])
+
+instance Functor [] where  -- [], not [a], since [] is a type constructor and [a] already has a type set
+	fmap = map
+
+instance Functor Maybe where -- Now we can map over a Maybe! Again, we reach inside the constructor to the type, then apply a function to the type
+	fmap f (Just x) = Just (f x)
+	fmap f Nothing = Nothing
+
+instance Functor Tree where -- mapping recursively, all the way down the branches of our tree
+	fmap f EmptyTree = EmptyTree
+	fmap f (Node x left right) = Node (f x) (fmap f left) (fmap f right)
