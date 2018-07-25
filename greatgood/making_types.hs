@@ -1,6 +1,9 @@
 -- Making our own types and typeclasses
 
+-- GREAT AREA FOR REVIEW IF YOU FIND YOURSELF GETTING A LOT OF WEIRD ERROR MESSAGES! THIS IS A COMMON AREA OF CONFUSION!
+
 import qualified Data.Map as Map 
+import qualified Data.List as List
 
 -- data Bool = False | True   -- Show all options when defining a type
 
@@ -217,7 +220,7 @@ t = buildTree [4,5,1,8,9,2,2,6]
 -- Here's how Eq works:
 
 -- class Eq a where  -- "a" can be any lowercase word (like "equatable") for our purposes
--- 	(==) :: a -> a -> Bool  -- this is a function of type (Eq a) => a -> a -> Bool
+-- (==) :: a -> a -> Bool  -- this is a function of type (Eq a) => a -> a -> Bool
 -- 	(/=) :: a -> a -> Bool
 -- 	x == y = not (x /= y)
 -- 	x /= y = not (x == y)
@@ -296,3 +299,26 @@ instance Functor Maybe where -- Now we can map over a Maybe! Again, we reach ins
 instance Functor Tree where -- mapping recursively, all the way down the branches of our tree
 	fmap f EmptyTree = EmptyTree
 	fmap f (Node x left right) = Node (f x) (fmap f left) (fmap f right)
+
+instance Functor (Either a) where -- even though Either takes two parameters, we can feed it one here and leave the other to float
+  fmap f (Right x) = Right (f x)
+  fmap f (Left x) = Left x -- treating Left as "empty" here, since otherwise we risk trying to map over the wrong type
+
+instance (Ord k) => Functor (Map.Map k) where -- Grab the type constructor from DataMap
+	fmap f x = Map.fromList $ List.map (\(k, v) -> (k, f v)) -> Map.toList x 
+	-- we need a clean way to transform every value in the map, meaning we need to start with a list, map over the list, then turn the mapped list into a Map
+
+
+-- Bonus notes:
+-- Each type has a "kind" (e.g. concrete type (*, like Int) or concrete -> concrete (* -> *, like Maybe and other constructors))
+-- Maybe Int, because it doesn't return a concrete type the way just maybe does, has a kind of *
+-- Either has a kind of * -> * -> *, because it takes two concrete types (e.g. String and Int) to produce one type (Either String Int)
+-- Either String would be * -> *, and Either String Int is just *
+-- Any type we use in a functor must be * -> *, since "f" takes a concrete type and produces a concrete type
+
+data Barry t k p = Barry { yabba :: p, dabba :: t k } -- p must be *, we can assume k is * since it takes no parameters, and t must be * -> * since it takes k
+-- Since Barry takes all three parameters to output something else, its kind is:
+-- :k Barry   =    Barry :: (* -> *) -> * -> * -> *  
+
+instance Functor (Barry a b) where  
+    fmap f (Barry {yabba = x, dabba = y}) = Barry {yabba = f x, dabba = y}  -- Can only map one thingg at a time, so we choose the first field
