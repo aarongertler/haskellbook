@@ -143,7 +143,7 @@ unwrd = unwords ["first","second"] -- "first second" (string, not list)
 dlt = delete 'e' "delete" -- "dlete" (just first occurrence of an element)
 slashes = "delete" \\ "ete" -- "del" 
 slashesNum = [1..10] \\ [1,5] -- [2,3,4,6,7,8,9,10]
-unn = union [1..5] [3..7] -- [1,2,3,4,5,6,7] (joins all elements in one or both, eliminates duplicates)
+unn = Data.List.union [1..5] [3..7] -- [1,2,3,4,5,6,7] (joins all elements in one or both, eliminates duplicates)
 sect = intersect [1..5] [3..7] -- [3,4,5] (only elements that were in both)
 
 

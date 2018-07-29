@@ -235,13 +235,13 @@ appMap = map ($ 4) [(4+),(2*),(^2),(sqrt)] -- [8.0,8.0,16.0,2.0]
 
 -- Function composition = f(g(x)), binding two functions together
 
-. :: (b -> c) -> (a -> b) -> a -> c -- enter an a, it becomes a b, which becomes a c
-f . g = \x -> f (g x)
+-- . :: (b -> c) -> (a -> b) -> a -> c -- enter an a, it becomes a b, which becomes a c
+-- f . g = \x -> f (g x)
 
--- Example: Turn a lot of numbers negative
-comp = map (negate . abs) [5, -3, -6, 7] -- everything becomes negative
+-- -- Example: Turn a lot of numbers negative
+-- comp = map (negate . abs) [5, -3, -6, 7] -- everything becomes negative
 
-compTwo = map (negate . sum . tail) [[1..5],[3..6],[1..7]] -- Returns the negative sum of all numbers but the first for each list
+-- compTwo = map (negate . sum . tail) [[1..5],[3..6],[1..7]] -- Returns the negative sum of all numbers but the first for each list
 
 -- To quote the book:
 -- sum (replicate 5 (max 6.7 8.9)) can be rewritten as 
@@ -252,7 +252,7 @@ compTwo = map (negate . sum . tail) [[1..5],[3..6],[1..7]] -- Returns the negati
 -- Writing functions with currying = "point free style"
 -- We can turn this:
 
-fn x = ceiling (negate (tan (cos (max 50 x))))
+-- fn x = ceiling (negate (tan (cos (max 50 x))))
 
 -- Into this:
 
