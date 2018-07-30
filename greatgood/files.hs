@@ -82,3 +82,22 @@ main = do
 
 
 -- And now, for our biggest program ever! To be written line-by-line
+
+main = do
+	handle <- openFile "todo.txt" ReadMode -- We're only reading the file, since we can't "write" a deletion (instead, we'll use the Haskell-y technique of deleting and replacing with a new file)
+	(tempName, tempHandle) <- openTempFile "." "temp" -- creating a temporary file in our directory (".") with a name that will be "tempXXX", where "XXX" is random stuff
+	contents <- hGetContents handle -- create a variable to hold the full text of todo.txt in a string, using the handle
+	let todoTasks = lines contents -- split our full text into lines (each line is a task)
+	    numberedTasks = zipWith (\n line -> show n ++ " - " ++ line) [0..] todoTasks -- each line is zipped to a number: "8 - Buy Bananas"
+	putStrLn "These are your TO-DO items:"
+	putStr $ unlines numberedTasks -- Return the full, numbered list
+	putStrLn "Which one do you want to delete?"
+	numberString <- getLine -- We need our answer entered as a single number, like "8", not "08" or "eight"
+	let number = read numberString
+	    newTodoItems = delete (todoTasks !! number) todoTasks -- todoTasks is still split into lines, and not numbered
+	hPutStr tempHandle $ unlines newTodoItems -- turn our set of remaining todos back into one big string, and connect that string to our new file through the handle
+	hClose handle
+	hClose tempHandle -- everything is connected where it needs to be, so we can close the handles -- we're done changing files
+	removeFile "todo.txt" -- close handle before removing
+	renameFile tempName "todo.txt" -- now that we don't have todo.txt anymore, we can re-establish it with our new, slimmer list
+      
