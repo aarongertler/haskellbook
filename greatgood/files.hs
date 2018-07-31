@@ -1,6 +1,10 @@
 -- Files and streams in Haskell
 
 import Data.Char
+import Data.List
+import System.Environment
+import System.Directory
+import System.IO
 
 main = do
 	contents <- getContents -- until we force-exit the program, take in whatever text we input (one line, if we're at the terminal)... 
@@ -26,8 +30,6 @@ main = do
 -- "interact" can give back one result, or keep taking input forever -- depends on how content is entered (terminal vs. file)
 
 
-
-import System.IO  
   
 -- main = do  
 --     handle <- openFile "test.txt" ReadMode  
@@ -88,16 +90,68 @@ main = do
 	(tempName, tempHandle) <- openTempFile "." "temp" -- creating a temporary file in our directory (".") with a name that will be "tempXXX", where "XXX" is random stuff
 	contents <- hGetContents handle -- create a variable to hold the full text of todo.txt in a string, using the handle
 	let todoTasks = lines contents -- split our full text into lines (each line is a task)
-	    numberedTasks = zipWith (\n line -> show n ++ " - " ++ line) [0..] todoTasks -- each line is zipped to a number: "8 - Buy Bananas"
+	    numberedTasks = zipWith (\n line -> show n ++ " - " ++ line) [0..] todoTasks -- each line is zipped to a number: ["8 - Buy Bananas", "9 - Smell the Roses", etc.]
 	putStrLn "These are your TO-DO items:"
 	putStr $ unlines numberedTasks -- Return the full, numbered list
 	putStrLn "Which one do you want to delete?"
 	numberString <- getLine -- We need our answer entered as a single number, like "8", not "08" or "eight"
 	let number = read numberString
 	    newTodoItems = delete (todoTasks !! number) todoTasks -- todoTasks is still split into lines, and not numbered
+			-- reminder: "delete" returns a new list without our item -- it doesn't modify an existing list
 	hPutStr tempHandle $ unlines newTodoItems -- turn our set of remaining todos back into one big string, and connect that string to our new file through the handle
 	hClose handle
 	hClose tempHandle -- everything is connected where it needs to be, so we can close the handles -- we're done changing files
 	removeFile "todo.txt" -- close handle before removing
 	renameFile tempName "todo.txt" -- now that we don't have todo.txt anymore, we can re-establish it with our new, slimmer list
-      
+      -- removeFile and renameFile take paths, not just strings, as their parameters (but we are in the current directory)
+
+
+-- Let's take some command-line arguments!
+
+main = do
+  args <- getArgs -- makes a list of the arguments the program was run with      
+  progName <- getProgName -- returns the program's name. Neat!
+  putStrLn "The arguments are:"
+  mapM putStrLn args -- we use mapM for I/O monad purposes (everything is printed in one I/O action)
+  putStrLn "The program name is:"
+  putStrLn progName
+
+
+-- Now to integrate the todo app with the command line:
+
+dispatch :: [(String, [String] -> IO ())] -- takes a list of k/v pairs (strings and I/O functions, respectively)
+dispatch = [ ("add", add)
+           , ("view", view)
+           , ("remove", remove)
+           ]
+
+main = do
+	(command:args) <- getArgs -- bind first argument as "command", the rest as a list of "args"
+	let (Just action) = lookup command dispatch -- "lookup" finds the right value in our "dispatch" k/v dictionary (so if we wrote "add" in the command line, we'd find the add function)
+	  -- We want a Maybe here in case someone doesn't include a command
+	action args -- then we run the appropriate function on our list of args
+
+add :: [String] -> IO () -- get a list with a filename and todo item, turn into an appendFile (I/O action)
+add [fileName, todoItem] = appendFile fileName (todoItem ++ "\n") -- mustn't forget the newline!
+
+view :: [String] -> IO ()
+view [fileName] = do
+	contents <- readFile fileName -- set up the handle
+	let todoTasks = lines contents
+	    numberedTasks = zipWith (\n line -> show n ++ " - " ++ line) [0..] todoTasks -- see other zipWith, above
+	putStr $ unlines numberedTasks
+
+remove :: [String] -> IO ()
+remove [fileName, numberString] = do
+	handle <- openFile fileName ReadMode -- we need fancy file creation/deletion privileges, because every deletion means a new file
+	(tempName, tempHandle) <- openTempFile "." "temp"
+	contents <- hGetContents handle
+	let number = read numberString
+	    todoTasks = lines contents
+	    newTodoItems = delete (todoTasks !! number) todoTasks
+	hPutStr tempHandle $ unlines newTodoItems
+	hClose handle
+	hClose tempHandle
+	removeFile fileName
+	renameFile tempName fileName
+	
