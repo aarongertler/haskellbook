@@ -5,6 +5,7 @@ import Data.List
 import System.Environment
 import System.Directory
 import System.IO
+import System.Random
 
 main = do
 	contents <- getContents -- until we force-exit the program, take in whatever text we input (one line, if we're at the terminal)... 
@@ -154,4 +155,32 @@ remove [fileName, numberString] = do
 	hClose tempHandle
 	removeFile fileName
 	renameFile tempName fileName
-	
+
+-- Next improvement to this would probably be graceful failure in the form of an "error" I/O action or exception
+
+
+
+-- Randomness! (Has its own typeclasses for purity reasons, since "normal" typeclasses should always return the same output given the same input)
+
+coinToss :: StdGen -> Bool
+coinToss gen = random newGen -- we always need to return a generator alongside our random value (#QUESTION: Is this proper newGen generation? Does this work?)
+-- When we call this, it would look like: threeCoins (mkStdGen X), where X was a number, and every new number would flip a different random coin
+
+-- Creating limitless randomness (currently available through "randoms")
+randoms' :: (RandomGen g, Random a) => g -> [a] -- Take a generator, produce a random value of a chosen type
+randoms' gen = let (value, NewGen) = random gen in value:randoms' newGen -- produce an infinite list, where each new random value is added sequentially, with a new generator paving the way for the next random value
+-- Could easily be made non-infinite, too (see the book's "finiteRandoms")
+
+-- randomR produces a random value from within a range; randomRs does this multiple times
+
+
+-- Why is this I/O-related? Well, we don't want to keep seeding our own generators. getStdGen lets us pull randomness from our system, as with other languages
+
+main = do
+	gen <- getStdGen
+	putStr $ take 20 (RandomRs ('a','z') gen) -- Produce a 20-character random string and set our new generator as whatever the system gave us (so the next string will be just as random)
+  -- But don't run getStdGen twice in one "main", or you'll get the same string twice (newStdGen fixes this by producing an extra generator)
+	-- REMEMBER: The gen is not the random number, it's just the machine we need to pass into any function that creates randomness (that's why it's the second parameter of RandomRs)
+
+
+	-- You left off on Control.Monad
