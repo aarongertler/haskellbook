@@ -183,4 +183,68 @@ main = do
 	-- REMEMBER: The gen is not the random number, it's just the machine we need to pass into any function that creates randomness (that's why it's the second parameter of RandomRs)
 
 
-	-- You left off on Control.Monad
+import qualified Data.Bytestring.Lazy as B
+import qualified Data.Bytestring as S
+
+-- Bytestrings: Like lists, but not as lazy, allow for more efficient processing of lists that we "pack" into them
+-- This packing turns the lists from a set of "promised" values that are retrieved later to an imperative-ish list
+-- pack :: [Word8] -> Bytestring   (takes bytes of type Word8, which allows only 8-bit numbers)
+
+B.pack [99, 97, 110] -- Chunk "can" Empty, the "can" represents the three values we've packed into our list (c, a, n)
+-- "Empty" is just an empty bytestring, shows that nothing comes after our last chunk
+
+-- "cons" adds a new chunk to a bytestring (whatever was there before is in parens after that new chunk)
+-- "cons'" with an apostrophe adds a chunk to a bytestring, but puts it within the *same* string, not separated (that's usually what you want, compressing
+-- many bytes to one string is what makes this process really efficient)
+-- Bytestrings allow most of the basic functions from Data.List (length, reverse, map, foldl, filter, etc.)
+
+main = do
+	(file1:file2:_) <- getArgs -- user enters two filenames (file from first copied into second), we don't care what else they enter
+	copyFile file1 file2
+
+-- is the same as...
+
+copyFile' :: FilePath -> FilePath -> IO () -- take two filepaths, output an I/O write action
+copyFile' file1 file2 = do
+	contents <- B.readFile source -- note how Bytestring has its own I/O functions
+	B.writeFile dest contents
+-- As you can see, turning string programs into Bytestring programs is easy, can boost performance if you need that
+
+
+-- Maybe and other "expressive" types (Either, etc.), give Haskell an advantage over imperative languages in reacting well to failure
+-- But we still want exceptions for when we deal with the unreliable outside world (can't predict *everything* weird that might happen...)
+-- And we also use them for "pure" code sometimes (expressive types don't help when we take the head of a normal empty list, or divide by zero)
+	-- ...though we should try to avoid that latter use, and use Either and Maybe and friends whenever possible
+
+-- Here's a classic non-exception way to try handling error:
+main = do (fileName:_) <- getArgs
+    fileExists <- doesFileExist fileName
+      if fileExists
+      	then do contents <- readFile fileName
+      	        putStrLn $ "The file has " ++ show (length (lines contents)) ++ " lines."
+      	else do putStrLn "The file doesn't exist."
+
+-- And the exception way: catch :: IO a -> (IOError -> IO a) -> IO a  (second parameter is a handler that tells us what IO action we should return post-error)
+import System.IO.Error
+
+main = catch toTry handler -- and now to write the IO action and handler from scratch:
+
+toTry :: IO () -- Not actually returning anything to I/O, so this is all we need, I guess? #QUESTION
+toTry = do (fileName:_) <- getArgs
+           contents <- readFile fileName
+           putStrLn $ "The file has X lines."
+
+handler :: IOError -> IO ()
+handler ex -- guard syntax or if/else is fine, of course
+    | isDoesNotExistError ex = -- IDNEE = predicate for IOError, takes an IOError and returns true or fale
+        case ioeGetFileName ex of Just path -
+        > putStrLn "File does not exist at: " ++ path
+                                 Nothing -    -- The other case we could have here
+        > putStrLn "File does not exist, location unknown"
+    | otherwise = ioError ex -- re-throw the exception, and do the default action for whatever our problem is (we now know the problem isn't nonexistence)
+    -- We can have any I/O action as our response for any IOError predicate (e.g. open up file-deleting function if we hit an isFullError and learn we're out of space)
+
+-- You can add several handlers if you want to split up exception management for the sake of readability
+
+
+-- But in the end, remember that we can still use IO (Either a b) instead of IO a, and reduce our need for exceptions even here
