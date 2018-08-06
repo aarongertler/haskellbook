@@ -11,7 +11,7 @@
 
 -- Another functor type: IO (is * -> *, because we can have IO String for grabbing strings with IO actions)
 
-instance Functor IO where
+instance Functor IO where    -- fmap :: (a -> b) -> IO a -> IO b
 	fmap f action = do -- for example, we could fmap "words" onto "getline", get a line, then split it into words
 		result <- action
 		return (f result) -- returns an IO action (result), so we know we need "do" syntax
@@ -19,4 +19,27 @@ instance Functor IO where
 main = do line <- fmap reverse getline
     putStrLn $ "You said " ++ line ++ " backwards!"
 
--- Why do we need the fmap for this? Could some other function work just as well? #QUESTION
+-- main = do line <- fmap (intersperse '-' . reverse . map toUpper) getline
+--     putStrLn line
+
+-- Why do we need the fmap for this? Could some other function work just as well for a simple transformation? 
+-- Well, we could bind the I/O result to a name, then apply the function to the name, but this is more elegant
+
+
+-- Now for (->) r!
+
+instance Functor ((->) r) where
+	fmap f g = (\x -> f (g x)) -- Mapping a function over another function! 
+
+-- Another way to think of this: 
+-- fmap :: (a -> b) -> ((->) r a) -> ((->) r b), or, in other words...
+-- fmap :: (a -> b) -> (r -> a) -> (r -> b)  = we take a function that turns a -> b and a function that turns r -> a, produce a function that turns r -> b
+
+-- So a much simpler version of the above:
+-- instance Functor ((->) r) where
+-- 	fmap = (.)
+
+-- This is just function composition! We transform a variable in some way, then add another function that transforms it a second time based on the first result
+
+-- fmap (*3) (+100) 1 = 303   -- Think of (+100) as a "box" that will eventually hold a result, then use (*3) to change what's in the "box"
+-- fmap (show . (*3)) (+100) 1 = "303"
