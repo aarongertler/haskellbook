@@ -29,7 +29,8 @@ main = do line <- fmap reverse getline
 -- Now for (->) r!
 
 instance Functor ((->) r) where
-	fmap f g = (\x -> f (g x)) -- Mapping a function over another function! 
+	fmap f g = (\x -> f (g x)) -- Mapping a function over another function! We produce a function (\x ->) that runs function f over the result of (g x)
+	                           -- Which, as we're about to see below, is just function composition!
 
 -- Another way to think of this: 
 -- fmap :: (a -> b) -> ((->) r a) -> ((->) r b), or, in other words...
@@ -39,7 +40,21 @@ instance Functor ((->) r) where
 -- instance Functor ((->) r) where
 -- 	fmap = (.)
 
--- This is just function composition! We transform a variable in some way, then add another function that transforms it a second time based on the first result
-
 -- fmap (*3) (+100) 1 = 303   -- Think of (+100) as a "box" that will eventually hold a result, then use (*3) to change what's in the "box"
 -- fmap (show . (*3)) (+100) 1 = "303"
+
+
+-- Functions that work on any functor will work differently depending on the functor we choose:
+
+-- "The type fmap (replicate 3) :: (Functor f) => f a -> f [a] means that the function will work on any functor. 
+-- What exactly it will do depends on which functor we use it on. 
+-- If we use fmap (replicate 3) on a list, the list's implementation for fmap will be chosen, which is just map. 
+-- If we use it on a Maybe a, it'll apply replicate 3 to the value inside the Just, or if it's Nothing, then it stays Nothing."
+
+-- fmap (replicate 3) (Right "foo") = Right ["foo","foo","foo"]
+
+
+-- First law of functors: fmap id = id (easy to understand)
+-- Second law of functors: fmap (f . g) = fmap f . fmap g, or: fmap (f . g) F = fmap f (fmap g F) = simple property of function composition
+
+-- What's an example of something that *doesn't* obey one of these laws? #QUESTION
