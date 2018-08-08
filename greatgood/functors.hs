@@ -57,4 +57,19 @@ instance Functor ((->) r) where
 -- First law of functors: fmap id = id (easy to understand)
 -- Second law of functors: fmap (f . g) = fmap f . fmap g, or: fmap (f . g) F = fmap f (fmap g F) = simple property of function composition
 
--- What's an example of something that *doesn't* obey one of these laws? #QUESTION
+-- What's an example of something that *doesn't* obey one of these laws? 
+-- Here we go!
+
+data CMaybe a = CNothing | CJust Int a deriving (Show)
+-- C = "counter", but the Just part holds two fields, one an Int and one free to be anything
+-- If we build fmap, and we wanted something to happen to both Int and a...
+  -- ...that would mean that "fmap id" won't actually give back the same thing we put in (breaking law #1),
+  -- which means that CMaybe isn't really a functor, and could produce faulty code 
+  -- The only way we could use CMaybe as a functor is if Int stayed the same when we used fmap
+
+-- Lesson: If you build a functor, always check it against the two laws!
+
+-- #QUESTION: Make sure you can define the following words later: "functor", "type", "type constructor"
+
+
+-- And now, onto applicative functors...
