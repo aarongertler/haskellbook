@@ -73,3 +73,19 @@ data CMaybe a = CNothing | CJust Int a deriving (Show)
 
 
 -- And now, onto applicative functors...
+
+-- fmap (*) (Just 3) = Just ((*) 3) = Just (* 3) = Num a => Maybe (a -> a) = function wrapped in a Just!
+
+-- If we map "compare", which has a type of (Ord a) => a -> a -> Ordering over a list of characters, 
+-- we get a list of functions of type Char -> Ordering (compare 'a', compare 'b', compare 'c'... all will work if we add a second character for comparison)
+
+-- Applicative lets us map something like Just (3 *) over Just 5, where normally we'd be out of luck (fmap maps normal functions over functors, not "functor functions" like Just (3 *))
+
+class (Functor f) => Applicative f where -- Anything that is in Applicative is in Functor, so fmap will work
+	pure :: a -> f a -- take any value and return a functor with that value inside of it
+	(<*>) :: f (a -> b) -> f a -> f b -- Takes a functor containing a function (like Just (3 *)) and maps the contained function over (f a) to produce (f b)
+
+instance Applicative Maybe where
+	pure = Just -- takes something like 3 or "dog" and produces Just 3 or Just "dog"
+	Nothing <*> _ = Nothing -- can't extract a function from Nothing
+	(Just f) <*> something = fmap f something -- whatever we want to apply our Just function to, we can! This "extracts" our function easily.
