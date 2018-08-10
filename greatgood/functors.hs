@@ -88,4 +88,66 @@ class (Functor f) => Applicative f where -- Anything that is in Applicative is i
 instance Applicative Maybe where
 	pure = Just -- takes something like 3 or "dog" and produces Just 3 or Just "dog"
 	Nothing <*> _ = Nothing -- can't extract a function from Nothing
-	(Just f) <*> something = fmap f something -- whatever we want to apply our Just function to, we can! This "extracts" our function easily.
+	(Just f) <*> something = fmap f something -- whatever we want to apply our Just function to, we can! This "extracts" our function easily. 
+	  -- We'll customize the "extract" function for different applicative functors
+
+	  -- Just (+3) <*> Just 9 = Just 12
+	  -- pure (+3) <*> Just 9 = Just 12  -> this version is preferred when you are using <*>
+	  -- pure (+) <*> Just 3 <*> Just 5 = Just 8   -> Look how much stuff you can smash together with applicative functors!
+
+	-- Applicative law: pure f <*> x = fmap f x
+	-- Or we can use the version of this that already exists:
+
+(<$>) :: (Functor f) => (a -> b) -> f a -> f b
+f <$> x = fmap f x -- We know we have a functor, which simplifies things
+
+-- (++) <$> Just "Aaron " <*> Just "Gertler" = Just "Aaron Gertler"   -> Making functor functions almost as simple as regular functions!
+
+
+-- Another applicative functor: Lists!
+
+instance Applicative [] where
+	pure x = [x] -- Need singleton list, not empty list (a value, not the lack of a value)
+	fs <*> xs = [f x | f <- fs, x <- xs] -- for each function in list f, apply it to all the elements in list x 
+	-- See list syntax in start.hs, the stuff after the divider defines what we run through our f x (in this case, everything in each list)
+	  -- Note: If we only have one function in our list, this is just mapping
+
+-- [(+),(*)] <*> [1,2] <*> [3,4] = [(1+),(2+),(1*),(2*)] <*> [3,4] = our final list of eight elements
+-- filter (>5) $ [(+),(*)] <*> [1,2] <*> [3,4] = [6,6,8]
+
+-- Lists are "non-deterministic computations" = we get all possible results, not just one result
+-- Adding non-deterministic computations gives us an even bigger (and less certain!) computation 
+
+instance Applicative IO where
+	pure = return -- works as a minimal context with a value, since "return" *does* create an I/O action
+	a <*> b = do
+		f <- a
+		x <- b
+		return (f x)
+
+-- This lets us use fun shorthand! For example:
+
+addLine :: IO String -- working with I/O actions that will only involve strings
+addLine = (++) <$> getLine <*> getLine -- map (++) onto the result of our first getLine, apply that concatenation to the second getLine
+  -- This means we don't have to bind each getLine to a variable, or produce an explicit "return" statements.
+  -- Longer version:
+
+  -- myAction :: IO String  
+  -- myAction = do  
+  --   a <- getLine  
+  --   b <- getLine  
+  --   return $ a ++ b  
+
+instance Applicative ((->) r) where
+	pure x = (\_ -> x) -- minimal context = function that takes anything, always returns the same result
+	f <*> g = \x -> f x (g x) -- for example, bind +3 and *3 so that you return (x * 3) + 3
+		-- #QUESTION: Why does entering "5" below create numbers 8 and 500 to be added, rather than returning (+3) ((*100) 5)? (Adding a 5 after (+3) would be incoherent...)
+
+-- (+) <$> (+3) <*> (*100) $ 5 = add (x+3) and (x*100) to make one function, then apply that function to 5, returning (8+500)
+-- The "5" only represents what is entered into our list of functions (we get 8 and 500 separately, not 3 + 500)
+
+-- k <$> f <*> g = we will call k with results from f and g
+
+-- (\x y z -> [x,y,z]) <$> (+3) <*> (*2) <*> (/2) $ 5  = [8.0,10.0,2.5]
+-- We will call "create a list of the results of functions" with results from these three functions 
+-- (each of which takes just one integer, so we only enter 5 -- entering a list of integers for functions to use would require mapping)
