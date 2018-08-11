@@ -175,10 +175,27 @@ liftA2 f a b = f <$> a <*> b -- apply the function to whatever is inside functor
 
 -- What if we wanted to add an arbitrary number of numbers from Maybe Ints to our Maybe list?
 sequenceA :: (Applicative f) => [f a] -> f [a] -- start with functors inside a list, end with a functor that holds a list
-sequenceA = foldr (liftA2 (:)) (pure []) -- the "pure" here is the same as Just [], [], or whatever else our functor's "pure" type is
+sequenceA = foldr (liftA2 (:)) (pure []) -- the "pure" here lets us gather everything in a list (the parameter would be "[]" alone, but functors need a pure)
 
 -- sequenceA [Just 3, Just 2, Just 1] = Just [3,2,1]
 -- sequenceA [(+3),(+2),(+1)] 3 = [6,5,4] = glue each function to 3 with a <*> b, then list the results by folding in f = (:)
--- sequenceA [[1,2,3],[4,5]] = [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]] = f <$> a produces [1:,2:,3:], and each of those is glued to each value in the second list
+-- sequenceA [[1,2,3],[4,5]] = [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]] = see "we start off with" for a full explanation, we form lists [4] and [5] before gluing things to them 
+    -- See "list comprehension" in the functors chapter for more explanation of this
     -- This kind of thing reminds us why lists count as functors (getting inside them to use functions wouldn't normally be this easy)
     -- To see the <*> definition that applies here, check "Applicative []"
+
+-- sequenceA can help us with filtering
+-- sequenceA [(>4),(<10)] 7 = [True,True] = again, folds our results into a list (from [a -> Bool] to a -> [Bool], we turn our list of functions into functions that can be applied to 7)
+
+-- sequenceA [getLine,getLine,getLine] = staples all three lines into one list
+
+
+-- More functor laws:
+
+-- pure id <*> v = v
+-- pure (.) <*> u <*> v <*> w = u <*> (v <*> w) = #QUESTION (how does the comma application work, exactly?)
+-- pure f <*> pure x = pure (f x)
+-- u <*> pure y = pure ($ y) <*> u = Applies pure to y, then applies y to u? #QUESTION, not certain I understand this
+
+
+-- Next up: newtype keyword
