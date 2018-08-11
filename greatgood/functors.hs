@@ -151,3 +151,34 @@ instance Applicative ((->) r) where
 -- (\x y z -> [x,y,z]) <$> (+3) <*> (*2) <*> (/2) $ 5  = [8.0,10.0,2.5]
 -- We will call "create a list of the results of functions" with results from these three functions 
 -- (each of which takes just one integer, so we only enter 5 -- entering a list of integers for functions to use would require mapping)
+
+
+instance Applicative ZipList where
+	pure x = ZipList (repeat x) -- will produce an infinite ZipList list, which is "minimal" because we need values in every possible position where a second list might need to be zipped 
+	                            -- (which lets us satisfy the second, fmap law of functors)
+	ZipList fs <*> ZipList xs = ZipList (zipWith (\f x -> f x) fs xs) -- apply each function in the first list to the corresponding value (not all values) in the second list)
+
+-- We'll need getZipList here, since ZipList a doesn't have a "show" type
+-- getZipList $ (+) <*> ZipList [1,2,3] <*> ZipList [100,100..] = [101,102,103] = map (+) to first list to make list of functions, zip it with the second list
+
+-- getZipList $ (,,) <$> ZipList "dog" <*> ZipList "cat" <*> ZipList "rat" = [('d','c','r'),('o','a','a'),('g','t','t')]
+-- the (,,) function in Haskell = \x y z -> (x,y,z) = how we easily grab item X from each of three lists (#QUESTION, not sure I fully understand this result, need to play with it later)
+    -- We could use zipWith3, zipWith4, etc., but this is obviously more elegant (assuming we get more commas to handle that sort of thing, I suppose?)
+
+
+-- Let's add more power to our use of functors!
+
+liftA2 :: (Applicative f) => (a -> b -> c) -> f a -> f b -> f c -- take a function with two inputs, turn into a function that operates on two functors
+liftA2 f a b = f <$> a <*> b -- apply the function to whatever is inside functors a and b
+
+-- liftA2 (:) (Just 3) (Just [4])  -- functors within functors! (Lists within Maybes, in this case)
+
+-- What if we wanted to add an arbitrary number of numbers from Maybe Ints to our Maybe list?
+sequenceA :: (Applicative f) => [f a] -> f [a] -- start with functors inside a list, end with a functor that holds a list
+sequenceA = foldr (liftA2 (:)) (pure []) -- the "pure" here is the same as Just [], [], or whatever else our functor's "pure" type is
+
+-- sequenceA [Just 3, Just 2, Just 1] = Just [3,2,1]
+-- sequenceA [(+3),(+2),(+1)] 3 = [6,5,4] = glue each function to 3 with a <*> b, then list the results by folding in f = (:)
+-- sequenceA [[1,2,3],[4,5]] = [[1,4],[1,5],[2,4],[2,5],[3,4],[3,5]] = f <$> a produces [1:,2:,3:], and each of those is glued to each value in the second list
+    -- This kind of thing reminds us why lists count as functors (getting inside them to use functions wouldn't normally be this easy)
+    -- To see the <*> definition that applies here, check "Applicative []"
