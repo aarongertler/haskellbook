@@ -198,4 +198,21 @@ sequenceA = foldr (liftA2 (:)) (pure []) -- the "pure" here lets us gather every
 -- u <*> pure y = pure ($ y) <*> u = Applies pure to y, then applies y to u? #QUESTION, not certain I understand this
 
 
--- Next up: newtype keyword
+-- Newtype = take one type and present it as a different type (while data makes new types from scratch)
+-- Unlike with data, you only get one field and one value constructor
+
+newtype ZipList a = ZipList { getZipList :: [a] } -- lets us show the result of ZipList without needing to add getZipList every time
+newtype CharList = CharList { getCharList :: [Char] } deriving (Eq, Show) -- takes a [Char], returns a CharList = CharList :: [Char] -> CharList
+
+-- newtype is also helpful when we want to map over an instance of Functor in an unusual way (e.g. targeting first component of a tuple, not both)
+
+newtype Pair a b = Pair { getPair :: (a,b) } -- The book had Pair b a, not a b. Why is that? #QUESTION
+instance Functor (Pair c) where
+	fmap f (Pair (x,y)) = Pair (f x, y) -- There! Now our function only touches the first element of our pair
+
+
+-- Advantage of newtype > data: Haskell doesn't need to check which value constructor we're using, 
+    -- so there are fewer ways to hit exceptions (e.g. if we pass in "undefined" somewhere)
+
+
+-- Left off at "type vs. newtype"
