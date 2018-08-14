@@ -209,10 +209,85 @@ newtype CharList = CharList { getCharList :: [Char] } deriving (Eq, Show) -- tak
 newtype Pair a b = Pair { getPair :: (a,b) } -- The book had Pair b a, not a b. Why is that? #QUESTION
 instance Functor (Pair c) where
 	fmap f (Pair (x,y)) = Pair (f x, y) -- There! Now our function only touches the first element of our pair
+	-- We needed newtype to transform our pair of values into a single value constructor (so that Functor would accept it)
 
 
 -- Advantage of newtype > data: Haskell doesn't need to check which value constructor we're using, 
     -- so there are fewer ways to hit exceptions (e.g. if we pass in "undefined" somewhere)
 
 
--- Left off at "type vs. newtype"
+-- Type vs. Newtype vs. Data
+
+-- type = give an existing type a new name for ease of reference
+type IntList = [Int]
+-- ([1,2,3] :: IntList) ++ ([4,5] :: [Int]) = [1,2,3,4,5]
+type PhoneBook = [(String,String)]
+
+-- newtype = take an existing type and wrap it in a new type (to help it fit into a typeclass like Functor) (like data, but more efficient, and only for one-to-one)
+newtype CharList = CharList { getCharList :: [Char] } -- CharList isn't a list, but does "contain" a list (and can be converted to a list with getCharList)
+newtype Real = MakeReal Integer -- we have a new type (Real) with a constructor that converts an Integer to that type
+
+toReal :: Integer -> Real
+toReal x = MakeReal x
+
+fromReal :: Real -> Integer
+fromReal (MakeReal x) = x
+
+-- data = make a type with as many constructors and fields as you want (see making_types.hs)
+
+
+
+-- Monoids! These are a combination of an associative binary function (*, ++) and an identity value (1, [])
+
+class Monoid m where -- concrete types only, no parameters here (so no type constructors, unlike Functor or Applicative)
+	mempty :: m -- the identity value
+	mappend :: m -> m -> m -- the binary function, which takes two values and returns one value of the same type (* with two numbers returns one number)
+	mconcat :: [m] -> m -- appends all the monoid values in a list together, returning one value 
+	mconcat = foldr mappend mempty -- this is a little redundant, but sometimes we might be able to do it more efficiently, so this is a reminder to check
+	    -- (but we will get mconcat by default when we define a new monoid, since it uses the mempty and mappend definitions we give i)t
+
+-- Monoid laws:
+-- mappend mempty x = x    (identity value!)
+-- mappend x mempry = x    (identity value! Again!)
+-- mappend (mappend x y) z = mappend x (mappend y z)    (associative property!)   (but monoids needn't be commutative -- lists certainly aren't)
+
+instance Monoid [a] where  -- [a], not [], we need a concrete type   (#QUESTION: Review the definition of "concrete type")
+	mempty = []
+	mappend = (++)
+
+-- the number type can be an instance of the Monoid class in two ways (addition and multiplication)
+-- Data.Monoid gives us Sum and Product types
+
+newtype Product a = Product { getProduct :: a } -- getProduct just pulls the number a out of Product a: getProduct (Product 9) = 9
+    deriving (Eq, Ord, Read, Show, Bounded)
+
+instance Num a => Monoid (Product a) where
+	mempty = Product 1 -- just the number 1 "wrapped in a Product constructor"
+	mappend Product x Product y = Product (x * y)
+
+newType Sum a = Sum { getSum :: a }
+    deriving (Eq, Ord, Read, Show, Bounded)
+
+instance Num a => Monoid (Sum a) where
+	mempty = Sum 0
+	mappend Sum a Sum b = Sum (a + b)
+
+-- Bools can be monoids in two ways: False = mempty and || = mappend, or True = mempty and && = mappend
+
+-- You can even do this with the Ordering type!
+
+instance Monoid Ordering where
+	mempty = EQ
+	mappend LT _ = LT -- LT _ is always LT, if _ is LT, EQ, or GT
+	mappend EQ y = y  -- If we're deciding which of two things is "greater", we can ignore equal elements and move on to the next comparison (adding an equal element doesn't change the overall comparison)
+	mappend GT _ = GT -- GT _ is always GT, if _ is LT, EQ, or GT
+
+lengthCompare :: String -> String -> Ordering -- compare lengths of two strings, or compare them alphabetically if they are of equal length
+lengthCompare x y = mappend (compare length x length y) -- if X or Y is of greater length, put that one first
+                            (compare x y) -- if X and Y are the same length, choose the one starting with the later letter of the alphabet
+
+-- The function above is much more efficient than what you could get without monoids (you create fewer variables to store values)
+-- If we wanted to add additional criteria for comparison, we could just throw more "compare" statements into our series of mappends, and we'd stop wherever we hit a non-EQ
+
+
+-- Left off on "Maybe the monoid"
