@@ -290,4 +290,5 @@ lengthCompare x y = mappend (compare length x length y) -- if X or Y is of great
 -- If we wanted to add additional criteria for comparison, we could just throw more "compare" statements into our series of mappends, and we'd stop wherever we hit a non-EQ
 
 
--- Left off on "Maybe the monoid"
+-- Maybe can also be a monoid by making its type parameter a monoid
+
