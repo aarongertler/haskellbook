@@ -292,3 +292,46 @@ lengthCompare x y = mappend (compare length x length y) -- if X or Y is of great
 
 -- Maybe can also be a monoid by making its type parameter a monoid
 
+instance Monoid a => Monoid (Maybe a) where -- a must be an instance of monoid for this to make sense
+	mempty = Nothing
+	mappend Nothing m = m
+	mappend m Nothing = m
+	mappend Just m1 Just m2 = Just (mappend m1 m2) -- monoid rules will apply for m1 and m2
+
+-- Or we can build a version that works for non-monoid types:
+
+newtype First a = First { getFirst :: Maybe a }
+    deriving (Eq, Ord, Read, Show)
+
+instance Monoid (First a) where
+	mempty = First Nothing
+	mappend First (Just x) _ = First (Just x) -- return the first parameter when we map, unless that parameter is Nothing
+	mappend First Nothing x = x -- If we mconcat a cluster of Maybes, we'll retain the first non-nothing (thanks to the rule above)
+
+-- This helps us learn if any of our Maybes is non-Nothing through mconcat
+-- There's also a Last a type in Data.Monoid, which gives back the *last* non-Nothing value when we mappend and mconcat
+
+
+-- Monoids are very handy for folding!
+import qualified Foldable as F -- fives us functions that can fold anything, not just lists
+-- F.foldl (+) 2 (Just 9) = 11
+-- F.foldr (||) False (Just True) = True
+
+-- We also get this bad boy:
+foldMap :: (Monoid m, Foldable t) => (a -> m) -> t a -> m  -- take a function that returns a monoid and a foldable structure, return a monoid value
+
+instance F.Foldable Tree where -- choose a function to fold over your tree (e.g. multiplying a tree full of numbers)
+	foldMap f Empty = mempty -- folding in an empty node in the tree shouldn't alter the final result
+	foldMap f (Node x l r) = F.foldMap f l `mappend`
+	                         f x           `mappend`
+	                         F.foldMap f r -- fold up everything under our node along with the node value (x)
+
+-- We can use this to search our tree!
+-- getAny $ F.foldMap (\x -> Any $ x == 3) testTree  
+    -- = use a function that runs through our tree, replacing each branch x with Any True (if it matches 3) or Any False (if it doesn't), 
+    -- then mappend the results (True if you have at least one Any True, False otherwise)
+
+-- And foldMap (\x -> [x]) turns our tree (or other foldable thing) into a list!
+
+
+-- In the end, we've built up a toolbox with lots of ways to tackle any given problem, because we keep breaking ideas down into simple structures
