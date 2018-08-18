@@ -26,5 +26,13 @@ applyMaybe (Just x) f = f x   -- Remember that our function must take x and retu
 
 -- This is a tiny example of the Monad type class:
 
-class Monad m where
-	return :: a -> m a
+class Monad m where -- every monad is applicative, but they were invented too long ago to need class (Applicative m) in front
+	return :: a -> m a  -- same as "pure" for the Applicative class (wraps anything in our chosen context -- the monad context)
+
+	(>>=) :: m a -> (a -> m b) -> m b
+
+	(>>) :: m a -> m b -> m b -- default function we'll rarely add to a Monad instance (but why is it here? #!UESTION)
+	x >> y = x >>= \_ -> y
+
+	fail :: String -> m a
+	fail msg = error msg
