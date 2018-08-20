@@ -107,3 +107,21 @@ routine = do
 -- Even if this all looks imperative, it remains sequential -- each line relies on the result of the previous lines (and their non-failure)
 
 -- Note: Since all the results so directly rely on the last result, >>= might actually be better than do notation here (but do notation is more flexible)
+
+
+-- We call our monad "fail" function (better than crashing!) when we use "do" notation and run to the end of our pattern matching without success
+
+
+-- How monads work for lists:
+instance Monad [] where
+	return x = [x]
+	xs >>= f = concat (map f xs) -- "concat" pulls together the set of results from the map (which might otherwise look like a list of lists)
+	fail _ = []
+
+-- An empty list anywhere will return an empty list, since you can't map over it or map "turn things empty" and get a result back
+
+-- [1,2] >>= \n -> ['a','b'] >>= \ch -> return (n,ch)   = we bind the lists to n and ch, respectively, then bind each possible (n,ch) tuple
+    -- Note that we've bound several lists together here, and keep going until we hit a "return"
+    -- The "return" creates a minimal context for (n,ch), which is exactly one instance of each possible tuple 
+         -- (this is non-deterministic, where choosing certain tuples would actually determine the outcome)
+    -- #QUESTION: Make sure you can map this out! It's a bit recursive in feel, trace where all the variables end up
