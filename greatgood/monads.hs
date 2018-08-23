@@ -125,3 +125,46 @@ instance Monad [] where
     -- The "return" creates a minimal context for (n,ch), which is exactly one instance of each possible tuple 
          -- (this is non-deterministic, where choosing certain tuples would actually determine the outcome)
     -- #QUESTION: Make sure you can map this out! It's a bit recursive in feel, trace where all the variables end up
+
+listOfTuples :: [(Int,Char)] -- Return a list of tuples, each of which is in (Int,Char) format
+listOfTuples = do
+	n <- [1,2]
+	ch <- ['a','b']
+	return (n,ch) -- We've created something more like a list comprehension, and do notation translates to >>= for us
+
+-- Given that we have list comprehension-like functionality, let's replicate filtering in monads:
+
+class Monad m => MonadPlus m where
+	mzero :: m a
+	mplus :: m a -> m a -> m a
+
+guard :: (MonadPlus m) => Bool -> m ()
+guard True = return () -- if true, return a minimal context (e.g. [()] for a list)
+guard False = mzero
+
+-- guard (4 > 1) >> return "true" :: [String]   = ["true"] = now we have a way to not execute certain computations in the middle of a monad!
+
+instance MonadPlus [] where
+	mzero = []
+	mplus = (++)
+
+-- [1..50] >>= (\x -> guard (elem '7' show x) >> return x)  = [7,17,27,37,47]
+    -- Mapping over [1..50], we only return [(7)]... and so on, otherwise returning [], then concatenate all of those returns
+
+sevensOnly :: [Int]
+sevensOnly = do
+	x <- [1..50]
+	guard (elem '7' show x) -- In do notation, "guard" is just a filter, giving us back results that fit and "zeroing" results that don't
+	return x
+
+
+-- Monad laws:
+
+-- 1. return x >>= f   MUST BE THE SAME THING AS   f x   (that's the definition of putting the value in a "minimal" context -- we shouldn't change the way f sees it)
+-- 2. m >>= return   IS THE SAME THING AS   m  (where m is any monadic value)
+  -- >>= just produces a map of our function over the value, and mapping "return" produces a list of values that can be concatenated to recreate the original value
+  -- monadic left/right identity laws are just describing how "return" should behave
+
+ -- 3. Associativity law of monads: any nesting shold work
+   -- (m >>= f) g   IS THE SAME AS    m >>= (\x -> f x >>= g)  = two ways of saying "feed value m to function f, then feed the result to function g"
+
