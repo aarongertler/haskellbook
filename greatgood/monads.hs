@@ -165,6 +165,83 @@ sevensOnly = do
   -- >>= just produces a map of our function over the value, and mapping "return" produces a list of values that can be concatenated to recreate the original value
   -- monadic left/right identity laws are just describing how "return" should behave
 
- -- 3. Associativity law of monads: any nesting shold work
-   -- (m >>= f) g   IS THE SAME AS    m >>= (\x -> f x >>= g)  = two ways of saying "feed value m to function f, then feed the result to function g"
+-- 3. Associativity law of monads: any nesting shold work
+  -- (m >>= f) g   IS THE SAME AS    m >>= (\x -> f x >>= g)  = two ways of saying "feed value m to function f, then feed the result to function g"
 
+  -- For example:
+  -- return (0,0) >>= landRight 2 >>= landLeft 2 >>= landRight 2
+
+  -- Gives the same result as:
+  -- return (0,0) >>= (\x ->    -- With >>=, x becomes (0,0)
+  -- landRight 2 x >>= (\y ->   -- This function landRights 2 on (0,0) and feeds (0,2) to become y through >>=
+  -- landLeft 2 y >>= (\z ->    
+  -- landRight 2 z)))
+
+-- Thanks to this, we can use composition on monadic functions:
+
+(<=<) :: (Monad m) => (b -> m c) -> (a -> m b) -> (a -> m c)
+f <=< g = (\x -> g x >>= f) -- Same as g (f x), since x >>= f feeds x into f
+
+let f x = [x,-x]
+let g x = [x*3,x*2]
+let h = f <=< g -- feed the result of g into f, which means running f on g, which means producing a maximally nondeterministic list
+h 3   -- [9,-9,6,-6]
+
+-- return <=< f   IS THE SAME AS   f <=< return   IS THE SAME AS   f
+-- ...which means that return with <=< works the same as id with .
+
+
+-- IN SHORT: >>= and do notation let us "focus on the values themselves while the context gets handled for us"
+    -- For example, by letting us bring in   Maybe a   to a function that just wants   a -> Maybe b
+-- EVERY MONAD HAS ITS OWN USES: The Maybe monad lets us fail safely halfway through a function, 
+    -- and the List monad lets us work with lists of nondeterminate outcomes (see ex/knight_moves.hs)
+
+-- And now, Writer, which lets us add "log values" to computations and produce an extra "log result"
+
+applyLog :: (Monoid m) => (a,m) -> (a -> (b,m)) -> (b,m) -- the monoids attached here serve as logs
+applyLog (x,log) f = let (y,newLog) = f x in (y, log `mappend` newLog) -- Remember that "mappend" combines any two monoids the way ++ combines strings
+  
+    -- For example, we could now create a store with (String,Int) tuples representing prices, and add up a total price as we went along
+    -- Writer is the best way to do this:
+
+newtype Writer w a = Writer { runWriter :: (a,w) } -- newtype lets us make Writer an instance of Monad
+
+instance (Monoid w) => Monad (Writer w) where
+	return x = Writer (x, mempty)
+	(Writer (x,v)) >>= f = let (Writer (y,v')) = f x in Writer (y, v `mappend` v')
+    -- Applying x to f gives us a   Writer w a   value, and we pattern-match that with a "let"
+    -- We set y equal to f x    and v' is coming from f, I think, based on how isBigGang worked in "A Few Monads More" (#QUESTION, make sure this is true)
+
+-- Using Writer with do notation
+
+logNumber :: Int -> Writer [String] Int  -- Because of how Writer is built as a newtype, we enter [String] and Int in reverse order (#QUESTION: Why is this necessary?)
+logNumber x = Writer (x, ["Got number: " ++ show x])
+
+multWithLog :: Int -> Int -> Writer [String] Int
+multWithLog x y = do
+	a <- logNumber x
+	b <- logNumber y
+	tell ["Multiplying both numbers"] -- part of MonadWriter type class, creates Writer ((),String) so that we add to the log without binding any variable (() remains unbound)
+	return (x*y)
+
+-- runWriter multWithLog 3 5   = (15,["Got number: 3","Got number: 5","Multiplying both numbers"])
+
+-- An example with a recurring function:
+
+gcd' :: Int -> Int -> Writer [String] Int
+gcd' a b
+    | b == 0 = do   -- This could also have been   Writer (a, ["Finished with " ++ show a]), but separating the note and the return is very readable!
+    	  tell ["Finished with " ++ show a] -- We found the GCD!
+    	  return a
+    | otherwise = do
+    	  tell [show a ++ " mod " ++ show b ++ " = " show (a `mod` b)] -- Leave giant note showing our full computation
+    	  gcd' b (a `mod` b) -- This works as a line in our "do" expression because gcd' will eventually return a Writer value, which is a real monad
+
+-- mapM_ putStrLn $ snd $ runWriter (gcd' 8 3)  
+-- 8 mod 3 = 2  
+-- 3 mod 2 = 1  
+-- 2 mod 1 = 0  
+-- Finished with 1  
+
+-- See "A Few Monads More" for a warning against functions that associate "to the left instead of the right"
+  -- gcd' could be written to stack up a collection of pending logs rather than producing each log as we go, which would be very inefficient
