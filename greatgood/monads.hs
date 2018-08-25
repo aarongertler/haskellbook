@@ -245,3 +245,29 @@ gcd' a b
 
 -- See "A Few Monads More" for a warning against functions that associate "to the left instead of the right"
   -- gcd' could be written to stack up a collection of pending logs rather than producing each log as we go, which would be very inefficient
+
+
+-- Up next: Difference lists
+-- These are lists, but with an automatic append attached to them
+    -- Why do this? Lets us immediately stick something to the back of our left-side list without building a new list from scratch
+    -- (because we don't have to "walk all the way to the end" of that list to attach the other one)
+
+f = ("dog"++)
+g = ("hair"++)
+f `append` g -- "doghair"++
+
+newtype DiffList a = DiffList { getDiffList :: [a] -> [a] } -- Difference lists are functions that take one list and return another
+
+toDiffList :: [a] -> DiffList a
+toDiffList xs = DiffList (xs++) -- return a DiffList type that lets us auto-append to the end of our list
+
+fromDiffList :: DiffList a => [a]
+fromDiffList (DiffList f) = f [] -- Since f is xs++, xs++ [] just creates [xs]
+
+instance Monoid (DiffList a) where
+	mempty = DiffList (\xs -> [] ++ xs) -- I don't think we can actually just write []++ here  (this is just the id function)
+	(DiffList f) `mappend` (DiffList g) = DiffList (\xs -> f (g xs)) -- paste f and g together, creating a function where you can paste xs on the end
+
+-- If we wanted, we could use this to improve something like the slow reverse gcd' function 
+    -- (building the list more easily thanks to lazy properties, I think? #QUESTION on how this looks step-by-step)
+    -- #QUESTION
