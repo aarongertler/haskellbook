@@ -270,4 +270,50 @@ instance Monoid (DiffList a) where
 
 -- If we wanted, we could use this to improve something like the slow reverse gcd' function 
     -- (building the list more easily thanks to lazy properties, I think? #QUESTION on how this looks step-by-step)
-    -- #QUESTION
+    -- #QUESTION: Check speed differences between the two versions of gcdreverse
+
+
+-- We can also turn all functions into monads (!)
+
+instance Monad ((->) r) where
+	return x = \_ => x -- Returns a function where anything you enter returns x
+	h >>= f = \w -> f (h w) w -- Returns a function where, if we enter w, we get the composition of h and f on w (just like we saw with functors and <*>)
+
+-- in "do" notation:
+
+addStuff :: Int -> Int
+addStuff = do
+	a <- (*2)
+	b <- (+10)
+	return a + b -- Both a and b are functions, so this works out the same as   (+) $ (*2) <*> (+10)
+	  -- All "return" does here is present a monadic value as a result, just like anywhere else
+    
+-- This setup is great for applying a bunch of functions to one thing that we want to throw in later (the sort of thing imperative languages do well!)
+
+
+-- Speaking of imperative programming, here's another tool we can use to make imperative-style work less tedious: The state monad
+
+-- "Stateful computation" = function that takes a state, returns a value and a state (as with our random-number generators in an earlier chapter)
+
+type Stack = [Int]
+
+pop :: Stack -> (Int,Stack)
+pop (x:xs) -> (x,xs)
+
+push :: Int -> Stack -> ((),Stack)
+push a xs = ((),a:xs) -- a:xs is the state we have after, but we aren't "getting" anything (just putting something on the stack), so we return "nothing"
+
+stackManip :: Stack -> (Int, Stack)
+stackManip = do  -- This is MUCH easier than manipulating states manually and producing lots of variables to represent those states (see other StackManip)
+	push 3 -- Put 3 on our stack
+	a <- pop -- Get 3 off our stack
+	pop -- Get the top number off our 
+
+
+newtype State s a = State { runState :: s -> (a,s) } -- #QUESTION: Review why this is the syntax, and what exactly "runState" will do
+
+instance Monad (State s) where
+	return x = State $ \s -> (x,s)
+	(State h) >>= f = State $ \s -> let (a, newState) = h s
+	                                    (State g) = f a
+	                                in  g newState    
