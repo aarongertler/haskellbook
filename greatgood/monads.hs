@@ -313,7 +313,56 @@ stackManip = do  -- This is MUCH easier than manipulating states manually and pr
 newtype State s a = State { runState :: s -> (a,s) } -- #QUESTION: Review why this is the syntax, and what exactly "runState" will do
 
 instance Monad (State s) where
-	return x = State $ \s -> (x,s)
-	(State h) >>= f = State $ \s -> let (a, newState) = h s
-	                                    (State g) = f a
-	                                in  g newState    
+	return x = State $ \s -> (x,s) -- return x with the original state (minimal context)
+	(State h) >>= f = State $ \s -> let (a, newState) = h s -- produce a new state using our old stateful computation (h) and our current state (s)
+	                                                        -- #QUESTION: What, exactly, is "a" doing here? Is it holding a value?
+	                                    (State g) = f a -- produce a new stateful computation using our function 
+	                                in  g newState -- result: a tuple of a result (g) and a state (newState)   
+
+-- This lets us rewrite pop and push with the State type:
+
+-- We are implicitly operating on a list with this formatting, no use of xs as an input to these
+
+pop :: State Stack Int --> Produces a state containing a Stack and an Int, is a stateful computation
+pop = State $ \(x:xs) -> (x,xs)
+
+push :: Int -> State Stack ()
+push a = State $ \xs -> ((),a:xs)
+
+stackStuff :: State Stack () -- We can now easily produce imperative-style "stateful computations"
+                             -- We can even chain them together as long as we always have an existing "state" to work with
+stackStuff = do
+	a <- pop
+	if a == 5
+		then push 5
+		else do
+			push 3
+			push 8
+
+-- Default functions for the state monad: get (returns current state) and put (replaces a state with a newState by force)
+-- If >>= worked only for state values, it would be the type:   (>>=) :: State s a -> (a -> State s b) -> State s b   = state type remains, result type might change
+    -- Take a state and a function that turns a state value into a new state, get a new state
+
+
+-- Putting this all together, here's how we build randomness:
+
+random :: (RandomGen g, Random a) => g -> (a,g) -- Start with a generator, return a generated value and new generator (a stateful tuple!)
+
+randomSt :: (RandomGen g, Random a) => State g a
+randomSt = State random
+
+threeCoins :: State StdGen (Bool,Bool,Bool) -- #QUESTION: Go check the first "threecoins" function, check how much smoother it's become
+threeCoins = do
+	a <- randomSt -- All the new generator production is now tastefully hidden
+	b <- randomSt
+	c <- randomSt
+	return (a,b,c)
+
+
+-- Either, as an "enhanced Maybe", is also a monad:
+
+instance (Error e) => Monad (Either e) where
+	return x = Right x
+	Right x >>= f = f x
+	Left err >>= f = Left err
+	fail msg = Left (strMsg msg)
