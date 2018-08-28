@@ -361,8 +361,66 @@ threeCoins = do
 
 -- Either, as an "enhanced Maybe", is also a monad:
 
-instance (Error e) => Monad (Either e) where
+instance (Error e) => Monad (Either e) where -- keep errors on the left, returns on the right
 	return x = Right x
-	Right x >>= f = f x
-	Left err >>= f = Left err
-	fail msg = Left (strMsg msg)
+	Right x >>= f = f x -- You need to return Either String a  in your functions, where "a" is the type of the Right return
+	Left err >>= f = Left err -- anytime we feed in the Left/error value, we return it with no regard for x
+	fail msg = Left (strMsg msg) -- strMsg creates an exception with the msg we added
+
+-- #QUESTION: A recommended exercise is to rewrite the pole-walker example with an error message that returns the bird distribution after he falls
+
+
+-- Here's a collection of monadic functions! (Remember: Monads feed values with context into normal functions and return values with context)
+
+liftM :: (Monad m) => (a -> b) -> m a -> m b -- fmap for monads! We never need a Functor, which shows us how much more flexible monads are
+liftM f m = m >>= (\x -> return (f x)) -- we simply apply f to m, whatever form m takes, because >>= lets us apply something over an entire monad already
+
+liftM :: (Monad m) => (a -> b) -> m a -> m b -- we can also skip >>= through do notation
+liftM f m = do 
+	x <- m 
+	return (f x) -- we apply f to m, then make sure we're back in a default context with "return"  
+	     -- #QUESTION: Dissect an example of this down to the roots, make sure you understand the type of each value at each step
+
+-- liftM (*3) Just 8  -- Just 24
+-- runWriter $ liftM not $ Writer (True, "abc")  -- (False, "abc")
+-- runState (liftM (+100) pop) [1,2,3,4]  -- (101,[2,3,4])
+
+ap :: Monad m => m (a -> b) -> m a -> m b  -- This is <*> for monads, letting us take a function inside a monad value and apply that function to another monad value
+ap mf m = do
+	f <- mf -- extracts the function, using the <- from do notation (which always grabs the inner value from a monad context)
+	x <- m
+	return (f x)
+
+-- Just (+3) `ap` Just 4  -- Just 7
+-- [(+1),(+2),(+3)] `ap` [10,11]  -- [11,12,12,13,13,14]   -- This works because of the way we set up the list monad long ago (to apply all functions in a list!)
+
+-- Again, monads look "strong" (flexible) here, because we can replicate Applicative just using Monad's functions
+-- In real Haskell programming, people often make Applicative instances from Monad instances by setting "pure" as return and <*> as ap
+    -- Or make Functors from Monads by setting fmap to liftM
+
+-- Finally, liftM2 is the monad version of liftA2 (it lets us apply a function between two applicative values, producing a third function -- see earlier chapter)
+
+
+-- Oooh! We can flatten monads, too!
+
+join :: (Monad m) => m (m a) -> m a
+join mm = do
+	m <- mm  -- Get the result of mm, which will be a monadic value in and of itself (all context is taken care of)
+	m
+
+-- #QUESTION: THIS ONE IS IMPORTANT! Go back to do notation and figure out how <- grabs the result 
+
+-- join (Just (Just 9))  -- Just 9
+-- join (Right (Right 9))  -- Right 9
+-- join [[1,2],[3,4]]  -- [1,2,3,4]   -- the general-purpose "join" function turns into concat when applied to a list...
+
+-- ...and mappend when applied to a nested Writer value
+
+-- runWriter $ join (Writer (Writer (1,"a"),"b"))  -- (1,"ba")  (we get our value out alone, but join the logs)
+
+
+-- For every monad, join (fmap f m) is the same thing as >>=
+	  -- This means we can use the join/map combination to figure out how to implement >>= if that's tricky for a new monad
+
+
+-- Left off at "filterM"
