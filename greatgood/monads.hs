@@ -423,4 +423,51 @@ join mm = do
 	  -- This means we can use the join/map combination to figure out how to implement >>= if that's tricky for a new monad
 
 
--- Left off at "filterM"
+-- And we also have filtering:
+filterM :: (Monad m) => (a -> m Bool) -> [a] -> m [a] -- We return m [a] because we want to have the context of our monad
+filterM f = foldr (\x -> liftA2 (\y -> if y then (x:) else id) (f x)) (pure []) -- f x returns True or False, and that becomes the value of y
+    -- prepend x to our list if our filter returns true; if not, we just return the id value (which doesn't add anything to our list)
+
+    -- I found this explanation of filterM helpful: https://blog.ssanj.net/posts/2018-04-10-how-does-filterm-work-in-haskell.html
+
+keepSmall :: Int -> Writer [String] Bool -- This gives us a log of everything we filter in/out, and why
+keepSmall x 
+    | x < 4 = do
+    	  tell ["Keeping " ++ show x]
+    	  return True
+    | otherwise = do
+    	  tell [show x ++ " was too large"]
+    	  return False
+
+-- Now, to actually RETRIEVE the log, we need mapM_ putStrLn
+
+-- mapM_ putStrLn $ snd $ runWriter $ filterM keepSmall [9,1,5,2,10,3]   (we use snd and not fst because we only want the logs, not the filtered list [1,2,3])
+-- 9 is too large, throwing it away  
+-- Keeping 1  
+-- 5 is too large, throwing it away  
+-- Keeping 2  
+-- 10 is too large, throwing it away  
+-- Keeping 3  
+
+
+-- Getting all subsets of a monad set:
+
+powerset :: [a] -> [[a]] -- Return a list of lists
+powerset xs = filterM (\x -> [True, False]) xs -- We both drop and keep every element of the list
+    -- By doing this, we get lists like [True,True,False] [1,2], [False,True,True] [2,3], and [False,False,False] []
+
+
+-- From filters, we'll move to folds:
+foldM :: (Monad m) => (a -> b -> m a) -> a -> [b] -> m a -- our input function returns a monadic value, so our result is monadic
+
+binSmalls :: Int -> Int -> Maybe Int
+binSmalls acc x
+    | x > 9     = Nothing -- Make sure we only add small numbers, and fail if we hit a big one
+    	    -- This do structure also makes it easy to use Writer with folds
+    | otherwise = Just (acc + x)
+
+-- foldM binSmalls 0 [2,3,4]  = 9
+-- foldM binSmalls 0 [2,3,10]  = Nothing  
+
+
+-- Next: RPN calculator
