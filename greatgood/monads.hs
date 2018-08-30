@@ -426,7 +426,7 @@ join mm = do
 -- And we also have filtering:
 filterM :: (Monad m) => (a -> m Bool) -> [a] -> m [a] -- We return m [a] because we want to have the context of our monad
 filterM f = foldr (\x -> liftA2 (\y -> if y then (x:) else id) (f x)) (pure []) -- f x returns True or False, and that becomes the value of y
-    -- prepend x to our list if our filter returns true; if not, we just return the id value (which doesn't add anything to our list)
+    -- prepend x to our list if our filter returns true; if not, we just return the id value (which is our accumulator value -- in this case, pure)
 
     -- I found this explanation of filterM helpful: https://blog.ssanj.net/posts/2018-04-10-how-does-filterm-work-in-haskell.html
 
@@ -470,4 +470,20 @@ binSmalls acc x
 -- foldM binSmalls 0 [2,3,10]  = Nothing  
 
 
--- Next: RPN calculator
+-- Let's take our old RPN calculator and safety-proof it, so that we won't crash on any error
+
+readMaybe :: (Read a) => String -> Maybe a
+readMaybe st = case reads st of [(x,"")] -> Just x -- If we read something, it must be the data type we're looking for
+                                _ -> Nothing -- If we don't get [(x,"")] by reading (that is, we return an error), send back a Nothing
+
+foldingFunction :: [Double] -> String -> Maybe [Double] -- Sometimes, we'll want to fail, and access to Nothing makes that easy
+foldingFunction (x:y:ys) "*" = return ((x * y):ys)  
+foldingFunction (x:y:ys) "+" = return ((x + y):ys)  
+foldingFunction (x:y:ys) "-" = return ((y - x):ys)  
+foldingFunction xs numberString = liftM (:xs) (readMaybe numberString) -- If we've hit a non-Int, we now return Nothing
+
+solveRPN :: String -> Maybe Double
+solveRPN st = do
+	[result] <- foldM foldingFunction [] (words st) -- replaced foldl with foldM to return a Maybe value rather than just an Int or error
+	return result                                   -- Somehow, we also get a Nothing if we get more than one number in the end. #QUESTION: Why?
+
