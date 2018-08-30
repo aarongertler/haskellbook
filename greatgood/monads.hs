@@ -485,5 +485,58 @@ foldingFunction xs numberString = liftM (:xs) (readMaybe numberString) -- If we'
 solveRPN :: String -> Maybe Double
 solveRPN st = do
 	[result] <- foldM foldingFunction [] (words st) -- replaced foldl with foldM to return a Maybe value rather than just an Int or error
-	return result                                   -- Somehow, we also get a Nothing if we get more than one number in the end. #QUESTION: Why?
+	return result                                   -- if foldM sees more than one number in the stack, the RPN was ambiguous and we'll still return Nothing 
+		                                                  -- #QUESTION: Try this out and make sure you can figure out exactly why/when two numbers in the stack will fail
 
+-- Composing monadic functions: Just use <=<
+-- But you can also compose an *infinite* number of monadic functions this way!
+
+-- Let's have our knight from earlier move an arbitrary number of times:
+
+inMany :: Int -> KnightPos -> [KnightPos]
+inMany x start = return start >>= foldr (<=<) return (replicate x moveKnight) -- Basically, we generate a list of "moveKnight" functions, then glue them together with <=<
+
+canReachIn :: Int -> KnightPos -> KnightPos -> Bool
+canReachIn x start end = end `elem` inMany x start -- No need to hardcode the number "3" anymore!
+
+
+-- Making a new monad type: Lists of numbers with associated probabilities (handy!)
+
+newtype Prob a = Prob { getProb :: [(a,Rational)] } deriving Show 
+instance Functor Prob where
+	fmap f (Prob xs) = Prob $ map (\(x,p) -> (f x,p)) xs   -- Map over our Ints, leave the probabilities unchanged
+
+-- Easy to see that our minimal context is (x,1), since probabilities always add to 1
+-- As for >>=, remember that it's always equal to join (fmap f m)
+    -- If we want to flatten sub-probabilities, we need to multiply them together (1/2 chance of a 2/3 chance = 1/3 chance)
+
+flatten :: Prob (Prob a) -> Prob a
+flatten (Prob xs) = Prob $ concat $ map multAll xs
+    where multAll (Prob innerxs,p) = map (\(x,r) -> (x, p*r)) innerxs 
+    -- We have a probability of each inner set of probabilities, but the only x-value "outcomes" are in the nested level
+    -- So for each inner set of probabilities, we multiply by the corresponding p-value in our list
+    -- #QUESTION: When you come back, set up an example of this
+
+instance Monad Prob where
+	return x = Prob [(x,1%1)] -- We write probabilities as rational numbers, not floating-points (easier to avoid bugs)
+	m >>= f = flatten (fmap f m)
+	fail _ = Prob [] -- The "Nothing" of probabilities
+
+-- return x >>= f will equal f x, since we just multiply all probabilities by 1
+-- m >>= return holds by the same logic
+-- And of course, multiplication is associative, so f <=< (g <=< h) should equal (f <=< g) <=< h
+
+data Coin = H | T deriving (Show, Eq)
+
+coin :: Prob Coin
+coin = Prob [(H,1%2),(T,1%2)]
+
+loadedCoin :: Prob Coin
+loadedCoin = Prob [(H,1%10),(T,9%10)]
+
+flipThree = Prob Bool
+flipThree = do
+	a <- coin
+	b <- coin
+	c <- loadedCoin
+	return (all (==Tails) [a,b,c]) -- Will return seven "False" probabilities for outcomes with any heads and one "True" probability for all-tails outcomes
