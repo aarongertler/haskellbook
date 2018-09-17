@@ -16,7 +16,40 @@ changeLetter [] (Node _ l r) = Node 'P' l r -- ...until you reach the node at th
 
 -- Getting the element at our destination:
 
-elemAt :: Directionos -> Tree a -> a
+elemAt :: Directions -> Tree a -> a -- Grab an element after submitting a list of left/right moves
 elemAt (L:ds) (Node _ l _) = elemAt ds l -- If current first direction in the list is "left"...
 elemAt (R:ds) (Node _ _ r) = elemAt ds r
 elemAt [] (Node x _ _) = x  -- Stop and give your value once you reach the end of the directions
+
+-- It would be great if we could zoom in on nearby subtrees without taking it from the top each time. Thankfully, we can!
+
+-- type Breadcrumbs = [Direction] -- We'll remember which way we traveled at each point
+
+-- goLeft :: (Tree a, Breadcrumbs) -> (Tree a, Breadcrumbs)
+-- goLeft (Node _ l _, bs) = (l, L:bs) -- Add an L breadcrumb when we move left, bs is the rest of our Breadcrumb list (why? #QUESTION)
+
+-- goRight :: (Tree a, Breadcrumbs) -> (Tree a, Breadcrumbs) -- One step complete -- we now know that we came from the left or right to get to the current node
+-- goRight (Node _ r _, bs) = (r, R:bs)
+
+-- Now if we chain something like (goLeft (goRight (Tree, []))), we'll get a set of notes but also [L,R] breadcrumbs at the end 
+  -- For better syntax, just use (Tree, []) -: goRight -: goLeft
+
+data Crumb a = LeftCrumb a (Tree a) | RightCrumb a (Tree a) deriving (Show) 
+  -- Each "crumb" contains both the element we moved from and the element we *didn't* visit (all we don't have is the element we did visit, since we are there anyway)
+
+type Breadcrumbs a = [Crumb a] -- We'll remember which way we traveled at each point
+
+goLeft :: (Tree a, Breadcrumbs) -> (Tree a, Breadcrumbs)
+goLeft (Node x l r, bs) = (l, LeftCrumb x r:bs) -- Now we grab all the info from x and r, so we include them as well
+
+goRight :: (Tree a, Breadcrumbs) -> (Tree a, Breadcrumbs) -- One step complete -- we now know that we came from the left or right to get to the current node
+goRight (Node x l r, bs) = (r, RightCrumb x l:bs) -- This does still error out on an empty node -- something to fix later
+
+goUp :: (Tree a, Breadcrumbs a) -> (Tree a, Breadcrumbs a)
+goUp (t, LeftCrumb x r:bs) = (Node x t r, bs)   -- "t" is our tree, so we create a new sub-tree where our tree was "left" and now we've jumped up to x,
+goUp (t, RightCrumb x l:bs) = (Node x l t, bs)       -- which has us and also a right sub-tree
+  -- Oh, and we pick up our breadcrumbs as we go along, so that our "collection" reflects the minimum path to have reached our position after going up
+  -- Later, we'll use Maybe to fix the problems we'd face trying to go up from the top of a tree
+
+
+type Zipper a = (Tree a, Breadcrumbs a) -- This pair fully describes a certain piece of any tree (the piece we record as we set out a particular trail of crumbs)
