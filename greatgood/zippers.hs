@@ -47,9 +47,26 @@ goRight (Node x l r, bs) = (r, RightCrumb x l:bs) -- This does still error out o
 
 goUp :: (Tree a, Breadcrumbs a) -> (Tree a, Breadcrumbs a)
 goUp (t, LeftCrumb x r:bs) = (Node x t r, bs)   -- "t" is our tree, so we create a new sub-tree where our tree was "left" and now we've jumped up to x,
-goUp (t, RightCrumb x l:bs) = (Node x l t, bs)       -- which has us and also a right sub-tree
+goUp (t, RightCrumb x l:bs) = (Node x l t, bs)       -- which has a left sub-tree (t) and also a right sub-tree (r)
   -- Oh, and we pick up our breadcrumbs as we go along, so that our "collection" reflects the minimum path to have reached our position after going up
   -- Later, we'll use Maybe to fix the problems we'd face trying to go up from the top of a tree
 
 
 type Zipper a = (Tree a, Breadcrumbs a) -- This pair fully describes a certain piece of any tree (the piece we record as we set out a particular trail of crumbs)
+
+modify :: (a -> a) -> Zipper a -> Zipper a
+modify f (Node x l r, bs) = (Node (f x) l r, bs) -- Run a function over the values of our nodes! (for any node we happen to be focusing on) (not editing the branches below)
+modify f (Empty, bs) = (Empty, bs)
+
+-- let newFocus = (freeTree,[]) -: goLeft -: goRight -: modify (\_ -> 'P')   -> go left, then right, the turn the node you find into a P (no matter what it was before)
+    -- This is a "replacing" function -- you could also multiply the node, subtract from it, etc.
+
+-- let newFocus2 = modify (\_ -> 'X') (goUp newFocus)   -> take the above modified tree, go up a level, change node to X
+
+-- #QUESTION: Work with a tree for a while, keep a paper copy of the tree as a note alongside your work
+
+attach :: Tree a -> Zipper a -> Zipper a -- Take a tree and a zipper, return a new zipper where we focus on that particular tree
+attach t (_, bs) = (t, bs)               -- This lets us replace empty and existing sub-trees with entirely new trees
+
+-- let farLeft = (freeTree,[]) -: goLeft -: goLeft -: goLeft -: goLeft
+-- let newFocus = farLeft -: attach (Node 'Z' Empty Empty)    -> Go to the very left of our tree, attach a node with no sub-branches
