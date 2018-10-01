@@ -70,3 +70,43 @@ attach t (_, bs) = (t, bs)               -- This lets us replace empty and exist
 
 -- let farLeft = (freeTree,[]) -: goLeft -: goLeft -: goLeft -: goLeft
 -- let newFocus = farLeft -: attach (Node 'Z' Empty Empty)    -> Go to the very left of our tree, attach a node with no sub-branches
+
+
+-- How can we get to the top of our tree?
+
+topMost :: Zipper a -> Zipper a
+topMost (t,[]) = (t,[])    -- stop once we hit the top of the tree (no breadcrumbs left)
+topMost z = topMost (goUp z) -- if not at top of tree, go up a level and see if you're out of breadcrumbs yet
+
+
+-- Zippers can be used with almost any data structure (not just trees, but also lists -- which are like trees with just one sub-tree per node)
+
+type ListZipper a = ([a],[a]) -- Contains our list and the list of breadcrumbs
+
+goForward :: ListZipper a -> ListZipper a
+goForward (x:xs, bs) = (xs, x:bs)    -- It feels like cheating to just bring lists in like this, but it really isn't -- we're building a truly new tool, I think
+    -- Also, we add the list item we just "left behind" to the list of breadcrumbs we'll "pick up" if we move back
+
+goBack :: ListZipper a -> ListZipper a
+goBack (xs, b:bs) = (x:xs, bs)
+
+
+-- This chapter also contains examples of how to build a zipper-ed "file system", another use for tree-like structures (folders have "nodes", files don't)
+    -- We can zoom in immediately on particular folders this way (#QUESTION: Might be worth it to go back and work through this, the structure is cool)
+    -- And we can even rename files!
+    -- This system gives us a new "file system" whenever we change something, so we have "versioning" for free (if we save the versions somewhere)
+    	 -- Thanks, immutable data structures!
+
+
+-- Finally, we should take care of the "nonexistent item" problem. Here's how we'd use Maybe to do that in trees:
+
+-- goLeft :: Zipper a -> Maybe (Zipper a)  
+-- goLeft (Node x l r, bs) = Just (l, LeftCrumb x r:bs)  
+-- goLeft (Empty, _) = Nothing    -- Nice save! Just adding this last case and putting "just" in front of other outcomes is a simple way to manage errors
+  
+-- goRight :: Zipper a -> Maybe (Zipper a)  
+-- goRight (Node x l r, bs) = Just (r, RightCrumb x l:bs)  
+-- goRight (Empty, _) = Nothing  
+
+
+-- Now that we have Maybe involved, we'll need >>= instead of -: for our function application (time to go review past chapters...)
